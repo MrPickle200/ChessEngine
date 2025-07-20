@@ -230,7 +230,6 @@ def generate_white_rooks_move(white_rooks: Piece, white_occupancy: int, black_oc
 
 def generate_black_rooks_move(black_rooks: Piece, black_occupancy: int, white_occupancy: int) -> list:
     all_moves = []
-    all_occupancy = black_occupancy | white_occupancy
 
     for from_sq in range(64):
         if not black_rooks.is_on_square(from_sq):
@@ -280,6 +279,136 @@ def generate_black_rooks_move(black_rooks: Piece, black_occupancy: int, white_oc
 
     return all_moves
 
+def generate_white_bishops_move(white_bishops: Piece, white_occupancy: int, black_occupancy: int) -> list:
+    all_moves = []
+    all_occupancy = white_occupancy | black_occupancy
+
+    for from_sq in range(64):
+        if not white_bishops.is_on_square(from_sq):
+            continue
+
+        from_file = from_sq % 8
+
+        # --------- NORTH-EAST (↗) ---------
+        to_sq = from_sq + 9
+        while to_sq < 64 and to_sq % 8 > from_file:
+            if is_square_occupied_by_white(white_occupancy, to_sq):
+                break
+            all_moves.append((convert_idx_to_pos(from_sq), convert_idx_to_pos(to_sq)))
+            if is_square_occupied_by_black(black_occupancy, to_sq):
+                break
+            to_sq += 9
+            from_file += 1  # to ensure we don't wrap around
+
+        # --------- NORTH-WEST (↖) ---------
+        to_sq = from_sq + 7
+        temp_file = from_sq % 8
+        while to_sq < 64 and to_sq % 8 < temp_file:
+            if is_square_occupied_by_white(white_occupancy, to_sq):
+                break
+            all_moves.append((convert_idx_to_pos(from_sq), convert_idx_to_pos(to_sq)))
+            if is_square_occupied_by_black(black_occupancy, to_sq):
+                break
+            to_sq += 7
+            temp_file -= 1
+
+        # --------- SOUTH-EAST (↘) ---------
+        to_sq = from_sq - 7
+        temp_file = from_sq % 8
+        while to_sq >= 0 and to_sq % 8 > temp_file:
+            if is_square_occupied_by_white(white_occupancy, to_sq):
+                break
+            all_moves.append((convert_idx_to_pos(from_sq), convert_idx_to_pos(to_sq)))
+            if is_square_occupied_by_black(black_occupancy, to_sq):
+                break
+            to_sq -= 7
+            temp_file += 1
+
+        # --------- SOUTH-WEST (↙) ---------
+        to_sq = from_sq - 9
+        temp_file = from_sq % 8
+        while to_sq >= 0 and to_sq % 8 < temp_file:
+            if is_square_occupied_by_white(white_occupancy, to_sq):
+                break
+            all_moves.append((convert_idx_to_pos(from_sq), convert_idx_to_pos(to_sq)))
+            if is_square_occupied_by_black(black_occupancy, to_sq):
+                break
+            to_sq -= 9
+            temp_file -= 1
+
+    return all_moves
+
+def generate_black_bishops_move(black_bishops: Piece, black_occupancy: int, white_occupancy: int) -> list:
+    all_moves = []
+    all_occupancy = black_occupancy | white_occupancy
+
+    for from_sq in range(64):
+        if not black_bishops.is_on_square(from_sq):
+            continue
+
+        from_file = from_sq % 8
+
+        # --------- NORTH-EAST (↗) ---------
+        to_sq = from_sq + 9
+        temp_file = from_file
+        while to_sq < 64 and to_sq % 8 > temp_file:
+            if is_square_occupied_by_black(black_occupancy, to_sq):
+                break
+            all_moves.append((convert_idx_to_pos(from_sq), convert_idx_to_pos(to_sq)))
+            if is_square_occupied_by_white(white_occupancy, to_sq):
+                break
+            to_sq += 9
+            temp_file += 1
+
+        # --------- NORTH-WEST (↖) ---------
+        to_sq = from_sq + 7
+        temp_file = from_file
+        while to_sq < 64 and to_sq % 8 < temp_file:
+            if is_square_occupied_by_black(black_occupancy, to_sq):
+                break
+            all_moves.append((convert_idx_to_pos(from_sq), convert_idx_to_pos(to_sq)))
+            if is_square_occupied_by_white(white_occupancy, to_sq):
+                break
+            to_sq += 7
+            temp_file -= 1
+
+        # --------- SOUTH-EAST (↘) ---------
+        to_sq = from_sq - 7
+        temp_file = from_file
+        while to_sq >= 0 and to_sq % 8 > temp_file:
+            if is_square_occupied_by_black(black_occupancy, to_sq):
+                break
+            all_moves.append((convert_idx_to_pos(from_sq), convert_idx_to_pos(to_sq)))
+            if is_square_occupied_by_white(white_occupancy, to_sq):
+                break
+            to_sq -= 7
+            temp_file += 1
+
+        # --------- SOUTH-WEST (↙) ---------
+        to_sq = from_sq - 9
+        temp_file = from_file
+        while to_sq >= 0 and to_sq % 8 < temp_file:
+            if is_square_occupied_by_black(black_occupancy, to_sq):
+                break
+            all_moves.append((convert_idx_to_pos(from_sq), convert_idx_to_pos(to_sq)))
+            if is_square_occupied_by_white(white_occupancy, to_sq):
+                break
+            to_sq -= 9
+            temp_file -= 1
+
+    return all_moves
+
+def generate_white_queen_move(white_queen: Piece, white_occupancy: int, black_occupancy: int) -> list:
+    all_moves = []
+    all_moves.extend(generate_white_rooks_move(white_queen, white_occupancy, black_occupancy)) 
+    all_moves.extend(generate_white_bishops_move(white_queen, white_occupancy, black_occupancy))
+    return all_moves
+
+def generate_black_queen_move(black_queen: Piece, black_occupancy: int, white_occupancy:int) -> list:
+    all_moves = []
+    all_moves.extend(generate_black_rooks_move(black_queen, black_occupancy, white_occupancy))
+    all_moves.extend(generate_black_bishops_move(black_queen, black_occupancy, white_occupancy))
+    return all_moves
 
 def is_square_empty(occupancy:int, square:int) -> bool:
     return ((occupancy >> square) & 1) == 0
@@ -289,4 +418,5 @@ def is_square_occupied_by_black(black_occupancy:int, square:int) -> bool:
     return (black_occupancy >> square) & 1 == 1
 
 print_board(bitboards)
-print(generate_black_rooks_move(black_rooks, black_rooks.bitboard, white_occupancy))
+print(generate_white_queen_move(white_queen, white_queen.bitboard, black_occupancy))
+print(generate_black_queen_move(black_queen, black_queen.bitboard, white_occupancy))
