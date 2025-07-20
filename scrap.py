@@ -56,7 +56,7 @@ def convert_pos_to_idx(pos:str) -> int:
         "g1":6,
         "h1":7
              }
-    for i in range(2,8):
+    for i in range(2,9):
         for char in ['a','b','c','d','e','f','g','h']:
             table[char + str(i)] = table[char + str(i - 1)] + 8
     return table[pos]
@@ -177,13 +177,116 @@ def generate_black_knight_move(black_knights:Piece, all_occupancy:int, white_occ
 
     return all_moves
 
+def generate_white_rooks_move(white_rooks: Piece, white_occupancy: int, black_occupancy: int) -> list:
+    all_moves = []
+
+    for from_sq in range(64):
+        if not white_rooks.is_on_square(from_sq):
+            continue
+
+        from_file = from_sq % 8
+
+        # --- LEFT ---
+        to_sq = from_sq - 1
+        while to_sq >= 0 and to_sq % 8 < from_file:  # prevent wrapping
+            if is_square_occupied_by_white(white_occupancy, to_sq):
+                break
+            all_moves.append((convert_idx_to_pos(from_sq), convert_idx_to_pos(to_sq)))
+            if is_square_occupied_by_black(black_occupancy, to_sq):
+                break
+            to_sq -= 1
+
+        # --- RIGHT ---
+        to_sq = from_sq + 1
+        while to_sq < 64 and to_sq % 8 > from_file:  # prevent wrapping
+            if is_square_occupied_by_white(white_occupancy, to_sq):
+                break
+            all_moves.append((convert_idx_to_pos(from_sq), convert_idx_to_pos(to_sq)))
+            if is_square_occupied_by_black(black_occupancy, to_sq):
+                break
+            to_sq += 1
+
+        # --- UP ---
+        to_sq = from_sq + 8
+        while to_sq < 64:
+            if is_square_occupied_by_white(white_occupancy, to_sq):
+                break
+            all_moves.append((convert_idx_to_pos(from_sq), convert_idx_to_pos(to_sq)))
+            if is_square_occupied_by_black(black_occupancy, to_sq):
+                break
+            to_sq += 8
+
+        # --- DOWN ---
+        to_sq = from_sq - 8
+        while to_sq >= 0:
+            if is_square_occupied_by_white(white_occupancy, to_sq):
+                break
+            all_moves.append((convert_idx_to_pos(from_sq), convert_idx_to_pos(to_sq)))
+            if is_square_occupied_by_black(black_occupancy, to_sq):
+                break
+            to_sq -= 8
+
+    return all_moves
+
+def generate_black_rooks_move(black_rooks: Piece, black_occupancy: int, white_occupancy: int) -> list:
+    all_moves = []
+    all_occupancy = black_occupancy | white_occupancy
+
+    for from_sq in range(64):
+        if not black_rooks.is_on_square(from_sq):
+            continue
+
+        from_file = from_sq % 8
+
+        # --- LEFT ---
+        to_sq = from_sq - 1
+        while to_sq >= 0 and to_sq % 8 < from_file:  # prevents wrap from file A to H
+            if is_square_occupied_by_black(black_occupancy, to_sq):
+                break
+            all_moves.append((convert_idx_to_pos(from_sq), convert_idx_to_pos(to_sq)))
+            if is_square_occupied_by_white(white_occupancy, to_sq):
+                break
+            to_sq -= 1
+
+        # --- RIGHT ---
+        to_sq = from_sq + 1
+        while to_sq < 64 and to_sq % 8 > from_file:  # prevents wrap from file H to A
+            if is_square_occupied_by_black(black_occupancy, to_sq):
+                break
+            all_moves.append((convert_idx_to_pos(from_sq), convert_idx_to_pos(to_sq)))
+            if is_square_occupied_by_white(white_occupancy, to_sq):
+                break
+            to_sq += 1
+
+        # --- UP ---
+        to_sq = from_sq + 8
+        while to_sq < 64:
+            if is_square_occupied_by_black(black_occupancy, to_sq):
+                break
+            all_moves.append((convert_idx_to_pos(from_sq), convert_idx_to_pos(to_sq)))
+            if is_square_occupied_by_white(white_occupancy, to_sq):
+                break
+            to_sq += 8
+
+        # --- DOWN ---
+        to_sq = from_sq - 8
+        while to_sq >= 0:
+            if is_square_occupied_by_black(black_occupancy, to_sq):
+                break
+            all_moves.append((convert_idx_to_pos(from_sq), convert_idx_to_pos(to_sq)))
+            if is_square_occupied_by_white(white_occupancy, to_sq):
+                break
+            to_sq -= 8
+
+    return all_moves
+
+
 def is_square_empty(occupancy:int, square:int) -> bool:
     return ((occupancy >> square) & 1) == 0
 def is_square_occupied_by_white(white_occupancy:int, square:int) -> bool:
-    return (white_occupancy << square) & 1 == 1
+    return (white_occupancy >> square) & 1 == 1
 def is_square_occupied_by_black(black_occupancy:int, square:int) -> bool:
     return (black_occupancy >> square) & 1 == 1
 
 print_board(bitboards)
-print(generate_white_knight_move(white_knights, all_occupancy, black_occupancy))
-print(generate_black_knight_move(black_knights, all_occupancy, white_occupancy))
+print(generate_black_rooks_move(black_rooks, black_rooks.bitboard, white_occupancy))

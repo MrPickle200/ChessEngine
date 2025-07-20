@@ -32,6 +32,7 @@ black_king    = Piece('k','black',0x1000000000000000)
 
 white_occupancy = (white_pawns.bitboard | white_rooks.bitboard | white_knights.bitboard |
                    white_bishops.bitboard | white_queen.bitboard | white_king.bitboard)
+#white_occupancy = (white_pawns.bitboard | white_rooks.bitboard)
 
 black_occupancy = (black_pawns.bitboard | black_rooks.bitboard | black_knights.bitboard |
                    black_bishops.bitboard | black_queen.bitboard | black_king.bitboard)
