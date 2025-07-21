@@ -1,49 +1,6 @@
-from Piece import *
-
-bitboards = {
-    white_pawns.symbol: white_pawns,
-    white_knights.symbol: white_knights,
-    white_bishops.symbol: white_bishops,
-    white_rooks.symbol: white_rooks,
-    white_queen.symbol: white_queen,
-    white_king.symbol: white_king,
-    black_pawns.symbol: black_pawns,
-    black_knights.symbol: black_knights,
-    black_bishops.symbol: black_bishops,
-    black_rooks.symbol: black_rooks,
-    black_queen.symbol: black_queen,
-    black_king.symbol: black_king,
-} 
-
-def print_bitboard(bb):
-    for rank in range(7, -1, -1):
-        row = ""
-        for file in range(8):
-            sq = rank * 8 + file
-            row += '1 ' if (bb >> sq) & 1 else '. '
-        print(row)
-    print("")
-
-def print_board(bitboards:dict) -> None:
-    board = ['.'] * 64
-
-    # Fill in the board
-    for piece, bb in bitboards.items():
-        for square in range(64):
-            if (bb.bitboard >> square) & 1:
-                board[square] = piece
-
-    # Print the board top-down
-    print("  +-----------------+")
-    for rank in range(7, -1, -1):  # rank 8 to 1
-        row = f"{rank + 1} | "
-        for file in range(8):
-            index = rank * 8 + file
-            row += board[index] + ' '
-        row += "|"
-        print(row)
-    print("  +-----------------+")
-    print("    a b c d e f g h")
+from Piece import Piece
+from Move import Move
+from Materials import *
 
 def convert_pos_to_idx(pos:str) -> int:
     table = {
@@ -449,5 +406,3 @@ def is_square_occupied_by_white(white_occupancy:int, square:int) -> bool:
 def is_square_occupied_by_black(black_occupancy:int, square:int) -> bool:
     return (black_occupancy >> square) & 1 == 1
 
-print_board(bitboards)
-print(generate_black_king_move(black_king, black_king.bitboard))
