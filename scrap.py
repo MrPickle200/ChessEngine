@@ -410,6 +410,38 @@ def generate_black_queen_move(black_queen: Piece, black_occupancy: int, white_oc
     all_moves.extend(generate_black_bishops_move(black_queen, black_occupancy, white_occupancy))
     return all_moves
 
+def generate_white_king_move(white_king: Piece, white_occupancy:int) -> list:
+    all_moves = []
+    for from_sq in range(64):
+        if not white_king.is_on_square(from_sq):
+            continue
+        from_file = from_sq % 8
+            
+        #----MOVE UP, DOWN, LEFT, RIGHT, NORTH EAST, NORTH WEST, SOUTH EAST, SOUTH WEST-----
+        for i in [8 , -8 , -1 , 1 , 9, 7 , -7 , -9]:
+                to_sq = from_sq + i
+                if 0 <= to_sq <= 63:
+                    if abs(to_sq % 8 - from_file) <= 1 and not is_square_occupied_by_white(white_occupancy, to_sq):
+                        all_moves.append((convert_idx_to_pos(from_sq), convert_idx_to_pos(to_sq)))
+        break
+    return all_moves      
+
+def generate_black_king_move(black_king: Piece, black_occupancy:int) -> list:
+    all_moves = []
+    for from_sq in range(64):
+        if not black_king.is_on_square(from_sq):
+            continue
+        from_file = from_sq % 8
+            
+        #----MOVE UP, DOWN, LEFT, RIGHT, NORTH EAST, NORTH WEST, SOUTH EAST, SOUTH WEST-----
+        for i in [8 , -8 , -1 , 1 , 9, 7 , -7 , -9]:
+                to_sq = from_sq + i
+                if 0 <= to_sq <= 63:
+                    if abs(to_sq % 8 - from_file) <= 1 and not is_square_occupied_by_black(black_occupancy, to_sq):
+                        all_moves.append((convert_idx_to_pos(from_sq), convert_idx_to_pos(to_sq)))
+        break
+    return all_moves        
+
 def is_square_empty(occupancy:int, square:int) -> bool:
     return ((occupancy >> square) & 1) == 0
 def is_square_occupied_by_white(white_occupancy:int, square:int) -> bool:
@@ -418,5 +450,4 @@ def is_square_occupied_by_black(black_occupancy:int, square:int) -> bool:
     return (black_occupancy >> square) & 1 == 1
 
 print_board(bitboards)
-print(generate_white_queen_move(white_queen, white_queen.bitboard, black_occupancy))
-print(generate_black_queen_move(black_queen, black_queen.bitboard, white_occupancy))
+print(generate_black_king_move(black_king, black_king.bitboard))
