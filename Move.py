@@ -2,17 +2,17 @@ from Piece import Piece
 
 class Move:
 
-    def __init__(self, materials : list[Piece], move : tuple[str]):
+    def __init__(self, materials : dict[str : Piece], move : tuple[str]):
         self.materials = materials
         self.move = move
         self.piece = None
         self.target = None
 
-        for piece in materials:
+        for piece in materials.values():
             if ((piece.bitboard >> self.__convert_pos_to_idx(move[0])) & 1) == 1:
                 self.piece = piece
                 break
-        for piece in materials:
+        for piece in materials.values():
             if ((piece.bitboard >> self.__convert_pos_to_idx(move[1])) & 1) == 1:
                 self.target = piece
                 break
@@ -52,7 +52,7 @@ class Move:
         if self.target:
             self.target.set_square(target)
     
-    def update_materials(self) -> list[Piece]:
+    def update_materials(self) -> dict[str : Piece]:
         return self.materials
 
     def is_capture(self) -> bool: # Use to check if the move was captured opponent piece

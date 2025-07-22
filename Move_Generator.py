@@ -49,15 +49,15 @@ class Move_Generator:
                         two_step = i - 16
                         if self.__is_square_empty(all_occupancy, two_step):
                             all_moves.append((self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(two_step)))
-                # Capture left (>> 7)
+                # Capture left 
                 if from_sq % 8 != 0: # Not in rank A
-                    left_capture = i + 7
-                    if left_capture < 64 and self.__is_square_occupied_by_white(white_occupancy, left_capture):
+                    left_capture = i - 9
+                    if left_capture >= 0 and self.__is_square_occupied_by_white(white_occupancy, left_capture):
                         all_moves.append((self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(left_capture)))
-                # Capture riight (>> 9)
+                # Capture right 
                 if from_sq % 7 != 0: # Not in rank H
-                    right_capture = i + 9
-                    if right_capture < 64 and self.__is_square_occupied_by_white(white_occupancy, right_capture):
+                    right_capture = i - 7
+                    if right_capture >= 0 and self.__is_square_occupied_by_white(white_occupancy, right_capture):
                         all_moves.append((self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(right_capture)))
 
         return all_moves

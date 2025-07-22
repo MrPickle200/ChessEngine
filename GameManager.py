@@ -5,36 +5,40 @@ from Move_Generator import Move_Generator
 
 class GameManager:
 
-    def __init__(self, materials : list[Piece]):
-        self.materials : list[Piece] = materials
+    def __init__(self, materials : dict[str : Piece]):
+        self.materials : dict[str : Piece] = materials
         self.current_player : str = "white"
         self.bitboards : dict[str : Piece] = {}
+        self.game_is_over : bool = False
+        self.made_move : bool = False
+        self.promote_square : int = None
 
-        for piece in materials:
+        for piece in materials.values():
                 self.bitboards[piece.symbol] = piece 
 
-        white_materials : list[Piece] = self.materials[0:6]
-        black_materials : list[Piece] = self.materials[6:]
-        self.white_occupancy : int = white_materials[0].bitboard
-        self.black_occupancy : int = black_materials[0].bitboard
+        self.white_occupancy : int = self.materials["white_pawns"].bitboard
+        self.black_occupancy : int = self.materials["black_pawns"].bitboard
 
-        for i in range(1,6):
-            self.white_occupancy |= white_materials[i].bitboard
-            self.black_occupancy |= black_materials[i].bitboard
-
+        for piece in self.materials.values():
+            if piece.symbol != "P" and piece.color == "white":
+                self.white_occupancy |= piece.bitboard
+            elif piece.symbol != "p" and piece.color == "black":
+                self.black_occupancy |= piece.bitboard
         self.all_occupancy : int = (self.white_occupancy | self.black_occupancy)
 
     def __update_occupancy(self) -> None:
-        white_materials : list[Piece] = self.materials[0:6]
-        black_materials : list[Piece] = self.materials[6:]
-        self.white_occupancy : int = white_materials[0].bitboard
-        self.black_occupancy : int = black_materials[0].bitboard
+        self.white_occupancy : int = self.materials["white_pawns"].bitboard
+        self.black_occupancy : int = self.materials["black_pawns"].bitboard
 
-        for i in range(1,6):
-            self.white_occupancy |= white_materials[i].bitboard
-            self.black_occupancy |= black_materials[i].bitboard
-
+        for piece in self.materials.values():
+            if piece.symbol != "P" and piece.color == "white":
+                self.white_occupancy |= piece.bitboard
+            elif piece.symbol != "p" and piece.color == "black":
+                self.black_occupancy |= piece.bitboard
         self.all_occupancy : int = (self.white_occupancy | self.black_occupancy)
+       
+        for piece in materials.values():
+                self.bitboards[piece.symbol] = piece 
 
     def print_board(self) -> None:
         board = ['.'] * 64
@@ -58,18 +62,22 @@ class GameManager:
         print("  +-----------------+")
         print("    a b c d e f g h")
 
-    def make_move(self, move : tuple[str]) -> None:
+    def make_move(self, user_input : str) -> None:
             legal_moves = self.get_all_legal_moves()
-        
+            self.made_move = False
+            move : tuple[str] = (user_input[0:2], user_input[2:])
             if move not in legal_moves:
-                    print(f"{move[0] + move[1]} IS A ILLEGAL MOVE. PLEASE TRY AGAIN !!!")
+                    print(f"{user_input} IS A ILLEGAL MOVE. PLEASE TRY AGAIN !!!")
             else :
                 movement = Move(self.materials, move)
                 movement.make_move()
                 # Update materials
                 self.materials = movement.update_materials()
                 self.__update_occupancy()
-            
+                self.made_move = True
+                if self.promotion():
+                    self.handle_promote()
+                    
     def get_all_legal_moves(self) -> list[tuple[str]]:
         all_moves : list[tuple[str]] = self.__get_all_moves(self.current_player)
         legal_moves : list[tuple[str]] = []
@@ -95,8 +103,8 @@ class GameManager:
 
     def __get_all_moves(self, player : str) -> list[str]:
         all_moves = []
-        white_materials : list[Piece] = self.materials[0:6]
-        black_materials : list[Piece] = self.materials[6:]
+        white_materials : list[Piece] = [piece for piece in self.materials.values() if piece.color == "white"]
+        black_materials : list[Piece] = [piece for piece in self.materials.values() if piece.color == "black"]
         move_generator = Move_Generator()
 
         if player == "white":
@@ -133,14 +141,57 @@ class GameManager:
     def is_king_in_check(self) -> bool:
         opponent : str = "black" if self.current_player == "white" else "white"
         opponent_moves : list[tuple[str]] = self.__get_all_moves(opponent)
-        king_pos : str = self.materials[5].get_pos()[0]
+        king_pos : str = self.materials["white_king"].get_pos()[0] if self.current_player == "white" else self.materials["black_king"].get_pos()[0]
 
         for move in opponent_moves:
             if move[1] == king_pos:
                 return True
         return False
 
-gameManager = GameManager(materials)
-gameManager.print_board()
-gameManager.make_move(("a2", "a3"))
-gameManager.print_board()
+    def change_player(self) -> None:
+        self.current_player = "white" if self.current_player == "black" else "black"
+
+    def promotion(self) -> bool:
+        if self.current_player == "white":
+            white_pawns : Piece = self.materials["white_pawns"]
+            for square in white_pawns.get_squares():
+                if 56 <= square < 64:
+                    self.promote_square = square
+                    white_pawns.clear_square(square)
+                    return True
+            self.materials["white_pawns"] = white_pawns
+        else:
+            black_pawns : Piece = self.materials["black_pawns"]
+            for square in black_pawns.get_squares():
+                if 0 <= square < 8:
+                    self.promote_square = square
+                    black_pawns.clear_square(square)
+                    return True
+            self.materials["black_pawns"] = black_pawns
+        
+        return False
+    
+    def handle_promote(self) -> None:
+        if self.promote_square:
+            user_input = input("PROMOTE TO (Q/R/N/B)?: ") if self.current_player == "white" else input("PROMOTE TO (q/r/n/b)?: ")
+            bitboard : int = 1 << (63 - self.promote_square)
+            
+            if user_input == "Q":
+                self.materials["white_queen"].bitboard |= bitboard
+                print(bin(self.materials["white_queen"].bitboard))
+            elif user_input == "R":
+                self.materials["white_rooks"].bitboard |= bitboard
+            elif user_input == "N":
+                self.materials["white_knights"].bitboard |= bitboard
+            elif user_input == "B":
+                self.materials["white_bishops"].bitboard |= bitboard
+            elif user_input == "q":
+                self.materials["black_queen"].bitboard |= bitboard
+            elif user_input == "r":
+                self.materials["black_rooks"].bitboard |= bitboard
+            elif user_input == "n":
+                self.materials["black_knights"].bitboard |= bitboard
+            elif user_input == "b":
+                self.materials["black_bishops"].bitboard |= bitboard
+            
+            

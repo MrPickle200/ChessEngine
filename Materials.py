@@ -22,7 +22,19 @@ black_occupancy = (black_pawns.bitboard | black_rooks.bitboard | black_knights.b
 
 all_occupancy = white_occupancy | black_occupancy
 
-materials : list[Piece] = [white_pawns , white_rooks , white_knights , white_bishops , white_queen , white_king , black_pawns , black_rooks , black_knights , black_bishops , black_queen , black_king]
+materials : dict[str : Piece] = {"white_pawns" : white_pawns, 
+                                 "white_rooks": white_rooks , 
+                                 "white_knights" : white_knights , 
+                                 "white_bishops" : white_bishops , 
+                                 "white_queen" : white_queen , 
+                                 "white_king" : white_king , 
+                                 "black_pawns" : black_pawns , 
+                                 "black_rooks" : black_rooks , 
+                                 "black_knights" : black_knights , 
+                                 "black_bishops" : black_bishops , 
+                                 "black_queen" : black_queen , 
+                                 "black_king" : black_king
+                                 }
 
 bitboards = {
     white_pawns.symbol: white_pawns,
