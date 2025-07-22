@@ -4,6 +4,7 @@ from Materials import materials
 from Move_Generator import Move_Generator
 
 class GameManager:
+
     def __init__(self, materials : list[Piece]):
         self.materials : list[Piece] = materials
         self.current_player : str = "white"
@@ -12,6 +13,18 @@ class GameManager:
         for piece in materials:
                 self.bitboards[piece.symbol] = piece 
 
+        white_materials : list[Piece] = self.materials[0:6]
+        black_materials : list[Piece] = self.materials[6:]
+        self.white_occupancy : int = white_materials[0].bitboard
+        self.black_occupancy : int = black_materials[0].bitboard
+
+        for i in range(1,6):
+            self.white_occupancy |= white_materials[i].bitboard
+            self.black_occupancy |= black_materials[i].bitboard
+
+        self.all_occupancy : int = (self.white_occupancy | self.black_occupancy)
+
+    def __update_occupancy(self) -> None:
         white_materials : list[Piece] = self.materials[0:6]
         black_materials : list[Piece] = self.materials[6:]
         self.white_occupancy : int = white_materials[0].bitboard
@@ -46,16 +59,47 @@ class GameManager:
         print("    a b c d e f g h")
 
     def make_move(self, move : tuple[str]) -> None:
-        movement = Move(self.materials, move)
-        movement.make_move()
-    
-    def generate_move(self, current_player : str) -> list:
+            legal_moves = self.get_all_legal_moves()
+        
+            if move not in legal_moves:
+                    print(f"{move[0] + move[1]} IS A ILLEGAL MOVE. PLEASE TRY AGAIN !!!")
+            else :
+                movement = Move(self.materials, move)
+                movement.make_move()
+                # Update materials
+                self.materials = movement.update_materials()
+                self.__update_occupancy()
+            
+    def get_all_legal_moves(self) -> list[tuple[str]]:
+        all_moves : list[tuple[str]] = self.__get_all_moves(self.current_player)
+        legal_moves : list[tuple[str]] = []
+        root_materials = self.materials
+
+        for move in all_moves:
+            movement = Move(self.materials, move)
+            movement.make_move()
+            self.materials = movement.update_materials()
+            self.__update_occupancy()
+
+            if self.is_king_in_check():
+                movement.undo_move()
+                self.materials = root_materials
+                self.__update_occupancy()
+                continue
+            
+            movement.undo_move()
+            self.materials = root_materials
+            self.__update_occupancy()
+            legal_moves.append(move)
+        return legal_moves
+
+    def __get_all_moves(self, player : str) -> list[str]:
         all_moves = []
         white_materials : list[Piece] = self.materials[0:6]
         black_materials : list[Piece] = self.materials[6:]
         move_generator = Move_Generator()
 
-        if current_player == "white":
+        if player == "white":
             for piece in white_materials:
                 if piece.symbol == 'P': 
                     all_moves.extend(move_generator.generate_white_pawns_move(piece, self.white_occupancy, self.black_occupancy))
@@ -86,7 +130,17 @@ class GameManager:
 
         return all_moves
 
+    def is_king_in_check(self) -> bool:
+        opponent : str = "black" if self.current_player == "white" else "white"
+        opponent_moves : list[tuple[str]] = self.__get_all_moves(opponent)
+        king_pos : str = self.materials[5].get_pos()[0]
+
+        for move in opponent_moves:
+            if move[1] == king_pos:
+                return True
+        return False
 
 gameManager = GameManager(materials)
 gameManager.print_board()
-print(gameManager.generate_move("black"))
+gameManager.make_move(("a2", "a3"))
+gameManager.print_board()

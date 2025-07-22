@@ -16,6 +16,7 @@ class Move:
             if ((piece.bitboard >> self.__convert_pos_to_idx(move[1])) & 1) == 1:
                 self.target = piece
                 break
+
     def __convert_pos_to_idx(self,pos:str) -> int:
         table = {
             "a1":0,
@@ -50,6 +51,9 @@ class Move:
         self.piece.clear_square(target)
         if self.target:
             self.target.set_square(target)
+    
+    def update_materials(self) -> list[Piece]:
+        return self.materials
 
     def is_capture(self) -> bool: # Use to check if the move was captured opponent piece
         return self.target is not None
