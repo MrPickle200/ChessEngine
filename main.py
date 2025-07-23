@@ -9,7 +9,7 @@ def main():
         gameManager.make_move(user_input)
         if gameManager.made_move:
             gameManager.print_board()
-#            gameManager.change_player()
+            #gameManager.change_player()
 
 if __name__ == "__main__":
     main()

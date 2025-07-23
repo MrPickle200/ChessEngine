@@ -63,9 +63,10 @@ class GameManager:
         print("    a b c d e f g h")
 
     def make_move(self, user_input : str) -> None:
-            legal_moves = self.get_all_legal_moves()
             self.made_move = False
+            legal_moves = self.get_all_legal_moves()
             move : tuple[str] = (user_input[0:2], user_input[2:])
+
             if move not in legal_moves:
                     print(f"{user_input} IS A ILLEGAL MOVE. PLEASE TRY AGAIN !!!")
             else :
@@ -77,6 +78,8 @@ class GameManager:
                 self.made_move = True
                 if self.promotion():
                     self.handle_promote()
+
+        ## can't move pawn b7c8
                     
     def get_all_legal_moves(self) -> list[tuple[str]]:
         all_moves : list[tuple[str]] = self.__get_all_moves(self.current_player)
@@ -152,13 +155,16 @@ class GameManager:
         self.current_player = "white" if self.current_player == "black" else "black"
 
     def promotion(self) -> bool:
+        signal : bool = False
+
         if self.current_player == "white":
             white_pawns : Piece = self.materials["white_pawns"]
             for square in white_pawns.get_squares():
                 if 56 <= square < 64:
                     self.promote_square = square
                     white_pawns.clear_square(square)
-                    return True
+                    signal = True
+                    break
             self.materials["white_pawns"] = white_pawns
         else:
             black_pawns : Piece = self.materials["black_pawns"]
@@ -166,32 +172,35 @@ class GameManager:
                 if 0 <= square < 8:
                     self.promote_square = square
                     black_pawns.clear_square(square)
-                    return True
+                    signal = True
+                    break
             self.materials["black_pawns"] = black_pawns
         
-        return False
+        return signal
     
     def handle_promote(self) -> None:
         if self.promote_square:
-            user_input = input("PROMOTE TO (Q/R/N/B)?: ") if self.current_player == "white" else input("PROMOTE TO (q/r/n/b)?: ")
-            bitboard : int = 1 << (63 - self.promote_square)
-            
-            if user_input == "Q":
-                self.materials["white_queen"].bitboard |= bitboard
-                print(bin(self.materials["white_queen"].bitboard))
-            elif user_input == "R":
-                self.materials["white_rooks"].bitboard |= bitboard
-            elif user_input == "N":
-                self.materials["white_knights"].bitboard |= bitboard
-            elif user_input == "B":
-                self.materials["white_bishops"].bitboard |= bitboard
-            elif user_input == "q":
-                self.materials["black_queen"].bitboard |= bitboard
-            elif user_input == "r":
-                self.materials["black_rooks"].bitboard |= bitboard
-            elif user_input == "n":
-                self.materials["black_knights"].bitboard |= bitboard
-            elif user_input == "b":
-                self.materials["black_bishops"].bitboard |= bitboard
+            bitboard : int = 1 << self.promote_square
+
+            if self.current_player == "white":
+                user_input = input("PROMOTE TO (Q/R/N/B)?: ")    
+                if user_input == "Q":
+                    self.materials["white_queen"].bitboard |= bitboard
+                elif user_input == "R":
+                    self.materials["white_rooks"].bitboard |= bitboard
+                elif user_input == "N":
+                    self.materials["white_knights"].bitboard |= bitboard
+                elif user_input == "B":
+                    self.materials["white_bishops"].bitboard |= bitboard
+            else:
+                user_input = input("PROMOTE TO (q/r/n/b)?: ")
+                if user_input == "q":
+                    self.materials["black_queen"].bitboard |= bitboard
+                elif user_input == "r":
+                    self.materials["black_rooks"].bitboard |= bitboard
+                elif user_input == "n":
+                    self.materials["black_knights"].bitboard |= bitboard
+                elif user_input == "b":
+                    self.materials["black_bishops"].bitboard |= bitboard
             
             
