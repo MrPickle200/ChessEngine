@@ -3,19 +3,17 @@ from Piece import Piece
 class Move:
 
     def __init__(self, materials : dict[str : Piece], move : tuple[str]):
-        self.materials = materials
+        self.materials : dict[str : Piece] = materials
         self.move = move
-        self.piece = None
-        self.target = None
+        self.piece : Piece = None
+        self.target : Piece = None
+        self.en_passant_sq : int = None
 
         for piece in materials.values():
             if ((piece.bitboard >> self.__convert_pos_to_idx(move[0])) & 1) == 1:
                 self.piece = piece
-                break
-        for piece in materials.values():
             if ((piece.bitboard >> self.__convert_pos_to_idx(move[1])) & 1) == 1:
                 self.target = piece
-                break
 
     def __convert_pos_to_idx(self,pos:str) -> int:
         table = {
@@ -39,6 +37,8 @@ class Move:
         
         if self.target:
             self.target.clear_square(target)
+        if self.get_en_passant_piece():
+            self.get_en_passant_piece().clear_square(self.en_passant_sq)
 
         self.piece.set_square(target)
         self.piece.clear_square(current_pos)
@@ -58,8 +58,11 @@ class Move:
     def is_capture(self) -> bool: # Use to check if the move was captured opponent piece
         return self.target is not None
 
-    def get_captured_piece(self) -> Piece | None:
-        return self.target
+    def get_en_passant_piece(self) -> Piece | None:
+        for piece in self.materials.values():
+            if self.en_passant_sq:
+                if ((piece.bitboard >> self.en_passant_sq) & 1) == 1:
+                    return piece
 
-    def display_move(self) -> str:
-        return self.move[0] + self.move[1]
+    def get_piece(self) -> Piece | None:
+        return self.piece

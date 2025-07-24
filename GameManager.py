@@ -12,6 +12,8 @@ class GameManager:
         self.game_is_over : bool = False
         self.made_move : bool = False
         self.promote_square : int = None
+        self.last_move: tuple[str] = None
+        self.last_moved_piece: Piece = None
 
         for piece in materials.values():
                 self.bitboards[piece.symbol] = piece 
@@ -66,20 +68,34 @@ class GameManager:
 
     def make_move(self, user_input : str) -> None:
             self.made_move = False
-            legal_moves = self.get_all_legal_moves()
+            legal_moves : list[tuple[str]] = self.get_all_legal_moves()
+
             move : tuple[str] = (user_input[0:2], user_input[2:])
 
             if move not in legal_moves:
                     print(f"{user_input} IS A ILLEGAL MOVE. PLEASE TRY AGAIN !!!")
             else :
                 movement = Move(self.materials, move)
+
+                # Track en-passant move
+                if self.last_move and self.last_moved_piece:
+                    en_passant : list[tuple[str]] = self.__en_passant()
+                    if move in en_passant:
+                        if self.current_player == "white":
+                            movement.en_passant_sq = self.__convert_pos_to_idx(move[1]) - 8
+                        else:
+                            movement.en_passant_sq = self.__convert_pos_to_idx(move[1]) + 8
+                self.last_move = move
+                self.last_moved_piece = movement.get_piece()
+
                 movement.make_move()
+                
                 # Update materials
                 self.materials = movement.update_materials()
                 self.__update_occupancy()
                 self.made_move = True
-                if self.promotion():
-                    self.handle_promote()
+                if self.__promotion():
+                    self.__handle_promote()
 
         ## can't move pawn b7c8
                     
@@ -104,6 +120,10 @@ class GameManager:
             self.materials = root_materials
             self.__update_occupancy()
             legal_moves.append(move)
+
+        if self.last_move and self.last_moved_piece:
+            legal_moves.extend(self.__en_passant())
+
         return legal_moves
 
     def __get_all_moves(self, player : str) -> list[str]:
@@ -156,7 +176,7 @@ class GameManager:
     def change_player(self) -> None:
         self.current_player = "white" if self.current_player == "black" else "black"
 
-    def promotion(self) -> bool:
+    def __promotion(self) -> bool:
         signal : bool = False
 
         if self.current_player == "white":
@@ -180,7 +200,7 @@ class GameManager:
         
         return signal
     
-    def handle_promote(self) -> None:
+    def __handle_promote(self) -> None:
         if self.promote_square:
             bitboard : int = 1 << self.promote_square
 
@@ -205,4 +225,61 @@ class GameManager:
                 elif user_input == "b":
                     self.materials["black_bishops"].bitboard |= bitboard
             
-            
+    def __en_passant(self) -> list[tuple[str]]:
+        from_sq : int = self.__convert_pos_to_idx(self.last_move[0])
+        to_sq : int = self.__convert_pos_to_idx(self.last_move[1])
+        en_passant_moves : list[tuple[str]] = []
+        target : int = None
+        if (self.last_moved_piece.color == "white" and self.last_moved_piece.symbol == "P"):
+            if 8 <= from_sq < 16:        
+                target = to_sq - 8
+                if target % 8 != 0:
+                    if self.materials["black_pawns"].is_on_square(target + 7):
+                        en_passant_moves.append((self.__convert_idx_to_pos(target + 7) , self.__convert_idx_to_pos(target)))
+                if target % 8 != 7:
+                    if self.materials["black_pawns"].is_on_square(target + 9):
+                        en_passant_moves.append((self.__convert_idx_to_pos(target + 9) , self.__convert_idx_to_pos(target)))
+        elif (self.last_moved_piece.color == "black" and self.last_moved_piece.symbol == "p"):
+            if 48 <= from_sq < 56:        
+                target = to_sq + 8
+                if target % 8 != 0:
+                    if self.materials["white_pawns"].is_on_square(target - 9):
+                        en_passant_moves.append((self.__convert_idx_to_pos(target -9) , self.__convert_idx_to_pos(target)))
+                if target % 8 != 7:
+                    if self.materials["white_pawns"].is_on_square(target - 7):
+                        en_passant_moves.append((self.__convert_idx_to_pos(target - 7) , self.__convert_idx_to_pos(target)))
+        return en_passant_moves
+    
+    def __convert_pos_to_idx(self, pos:str) -> int:
+        table = {
+            "a1":0,
+            "b1":1,
+            "c1":2,
+            "d1":3,
+            "e1":4,
+            "f1":5,
+            "g1":6,
+            "h1":7
+                }
+        for i in range(2,9):
+            for char in ['a','b','c','d','e','f','g','h']:
+                table[char + str(i)] = table[char + str(i - 1)] + 8
+        return table[pos]
+    
+    def __convert_idx_to_pos(self, idx:int) -> str:
+        table = {
+            "a1":0,
+            "b1":1,
+            "c1":2,
+            "d1":3,
+            "e1":4,
+            "f1":5,
+            "g1":6,
+            "h1":7
+                }
+        for i in range(2,9):
+            for char in ['a','b','c','d','e','f','g','h']:
+                table[char + str(i)] = table[char + str(i - 1)] + 8
+        for key, value in table.items():
+            if idx == value:
+                return key
