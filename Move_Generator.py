@@ -14,7 +14,6 @@ class Move_Generator:
                 one_step = i + 8
                 if one_step < 64 and self.__is_square_empty(all_occupancy, one_step): # (all_occupancy >> one_step) & 1 == 0 use to check if the targeted square is empty
                     all_moves.append((self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(one_step)))
-                    
                     #Double push if the pawn is in rank 2
                     if 8 <= i <= 15:
                         two_step = i + 16
@@ -25,8 +24,8 @@ class Move_Generator:
                     left_capture = i + 7
                     if left_capture < 64 and self.__is_square_occupied_by_black(black_occupancy, left_capture):
                         all_moves.append((self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(left_capture)))
-                # Capture riight (<< 9)
-                if from_sq % 7 != 0: # Not in rank H
+                # Capture right (<< 9)
+                if from_sq % 8 != 7: # Not in rank H
                     right_capture = i + 9
                     if right_capture < 64 and self.__is_square_occupied_by_black(black_occupancy, right_capture):
                         all_moves.append((self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(right_capture)))
@@ -55,7 +54,7 @@ class Move_Generator:
                     if left_capture >= 0 and self.__is_square_occupied_by_white(white_occupancy, left_capture):
                         all_moves.append((self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(left_capture)))
                 # Capture right 
-                if from_sq % 7 != 0: # Not in rank H
+                if from_sq % 8 != 7: # Not in rank H
                     right_capture = i - 7
                     if right_capture >= 0 and self.__is_square_occupied_by_white(white_occupancy, right_capture):
                         all_moves.append((self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(right_capture)))

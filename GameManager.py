@@ -62,6 +62,8 @@ class GameManager:
         print("  +-----------------+")
         print("    a b c d e f g h")
 
+        
+
     def make_move(self, user_input : str) -> None:
             self.made_move = False
             legal_moves = self.get_all_legal_moves()
