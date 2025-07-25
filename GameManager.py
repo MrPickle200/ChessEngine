@@ -12,8 +12,14 @@ class GameManager:
         self.game_is_over : bool = False
         self.made_move : bool = False
         self.promote_square : int = None
-        self.last_move: tuple[str] = None
-        self.last_moved_piece: Piece = None
+        self.last_move : tuple[str] = None
+        self.last_moved_piece : Piece = None
+        self.white_king_has_moved : bool = False
+        self.black_king_has_moved : bool = False
+        self.rook_a1_has_moved : bool = False
+        self.rook_h1_has_moved : bool = False
+        self.rook_a8_has_moved : bool = False
+        self.rook_h8_has_moved : bool = False
 
         for piece in materials.values():
                 self.bitboards[piece.symbol] = piece 
@@ -88,8 +94,38 @@ class GameManager:
                 self.last_move = move
                 self.last_moved_piece = movement.get_piece()
 
+                # Castling signal
+                if move in self.__castling():
+                    if move[1][0] == "h":
+                        movement.castling_dir = "right"
+                    elif move[1][0] == "a":
+                        movement.castling_dir = "left"
                 movement.make_move()
                 
+                # Track for castling
+
+                if self.current_player == "white":
+                    # Track the king
+                    if not self.white_king_has_moved and movement.is_king_moved():
+                        self.white_king_has_moved = True
+                    # Track the rooks
+                    if movement.piece.symbol == "R":
+                        if move[0] == "a1":
+                            self.rook_a1_has_moved = True
+                        elif move[0] == "h1":
+                            self.rook_h1_has_moved = True
+
+                elif self.current_player == "black" and not self.black_king_has_moved and movement.is_king_moved():
+                    # Track the king
+                    if not self.black_king_has_moved and movement.is_king_moved():
+                        self.black_king_has_moved = True
+                    # Track the rooks
+                    if movement.piece.symbol == "r":
+                        if move[0] == "a8":
+                            self.rook_a8_has_moved = True
+                        elif move[0] == "h8":
+                            self.rook_h8_has_moved = True
+
                 # Update materials
                 self.materials = movement.update_materials()
                 self.__update_occupancy()
@@ -110,6 +146,7 @@ class GameManager:
             self.materials = movement.update_materials()
             self.__update_occupancy()
 
+            # Create pseudo moves
             if self.is_king_in_check():
                 movement.undo_move()
                 self.materials = root_materials
@@ -123,6 +160,8 @@ class GameManager:
 
         if self.last_move and self.last_moved_piece:
             legal_moves.extend(self.__en_passant())
+
+        legal_moves.extend(self.__castling())
 
         return legal_moves
 
@@ -168,6 +207,8 @@ class GameManager:
         opponent_moves : list[tuple[str]] = self.__get_all_moves(opponent)
         king_pos : str = self.materials["white_king"].get_pos()[0] if self.current_player == "white" else self.materials["black_king"].get_pos()[0]
 
+
+        # Check if king's position is in opponent attack
         for move in opponent_moves:
             if move[1] == king_pos:
                 return True
@@ -250,6 +291,59 @@ class GameManager:
                         en_passant_moves.append((self.__convert_idx_to_pos(target - 7) , self.__convert_idx_to_pos(target)))
         return en_passant_moves
     
+    def __castling(self) -> list[tuple[str]]:
+        def is_square_in_attack(square : str , opponent_move : list[tuple[str]]) -> bool:
+            for move in opponent_move:
+                if move[1] == square:
+                    return True
+                
+        def is_right_side_safe(player : str, opponent_move : list[tuple[str]]) -> bool:
+            if player == "white":
+                if not is_square_in_attack("f1", opponent_move) and not is_square_in_attack("g1", opponent_move):
+                    return True
+            elif player == "black":
+                if not is_square_in_attack("f8", opponent_move) and not is_square_in_attack("g8", opponent_move):
+                    return True
+            return False
+        
+        def is_left_side_safe(player : str, opponent_move : list[tuple[str]]) -> bool:
+            if player == "white":
+                if not is_square_in_attack("b1", opponent_move) and not is_square_in_attack("c1", opponent_move) and not is_square_in_attack("d1", opponent_move):
+                    return True
+            elif player == "black":
+                if not is_square_in_attack("b8", opponent_move) and not is_square_in_attack("c8", opponent_move) and not is_square_in_attack("d8", opponent_move):
+                    return True
+            return False
+        
+        opponent : str = "white" if self.current_player == "black" else "black"
+        opponent_move : list[tuple[str]] = self.__get_all_moves(opponent)
+        castling_move : list[tuple[str]] = []
+
+        if self.current_player == "white":
+            if not self.white_king_has_moved and not self.rook_h1_has_moved:
+                if is_right_side_safe("white", opponent_move) and self.__is_square_empty("f1") and self.__is_square_empty("g1"):
+                    castling_move.append(("e1" , "h1"))
+            if not self.white_king_has_moved and not self.rook_a1_has_moved:
+                if is_left_side_safe("white", opponent_move) and self.__is_square_empty("b1") and self.__is_square_empty("c1") and self.__is_square_empty("d1"):
+                    castling_move.append(("e1" , "a1"))
+        elif self.current_player == "black":
+            if not self.black_king_has_moved and not self.rook_h8_has_moved:
+                if is_right_side_safe("black", opponent_move) and self.__is_square_empty("f8") and self.__is_square_empty("g8"):
+                    castling_move.append(("e8" , "h8"))
+            if not self.black_king_has_moved and not self.rook_a8_has_moved:
+                if is_left_side_safe("black", opponent_move) and self.__is_square_empty("b8") and self.__is_square_empty("c8") and self.__is_square_empty("d8"):
+                    castling_move.append(("e8" , "a8"))
+        
+        return castling_move
+
+
+    def __is_square_empty(self, square : str) -> bool:
+
+        all_occupancy : int = self.white_occupancy | self.black_occupancy
+        square_idx : int = self.__convert_pos_to_idx(square)
+
+        return (all_occupancy >> square_idx) & 1 == 0
+
     def __convert_pos_to_idx(self, pos:str) -> int:
         table = {
             "a1":0,

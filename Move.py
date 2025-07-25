@@ -8,6 +8,7 @@ class Move:
         self.piece : Piece = None
         self.target : Piece = None
         self.en_passant_sq : int = None
+        self.castling_dir : str = ""
 
         for piece in materials.values():
             if ((piece.bitboard >> self.__convert_pos_to_idx(move[0])) & 1) == 1:
@@ -43,6 +44,10 @@ class Move:
         self.piece.set_square(target)
         self.piece.clear_square(current_pos)
 
+        if self.castling_dir == "right":
+            self.target.set_square(current_pos)
+        elif self.castling_dir == "left":
+            self.target.set_square(current_pos - 1)
     def undo_move(self) -> None:
         target: int = self.__convert_pos_to_idx(self.move[1])
         current_pos: int = self.__convert_pos_to_idx(self.move[0])
@@ -57,6 +62,9 @@ class Move:
 
     def is_capture(self) -> bool: # Use to check if the move was captured opponent piece
         return self.target is not None
+    
+    def is_king_moved(self) -> bool:
+        return self.piece.symbol.lower() == "k"
 
     def get_en_passant_piece(self) -> Piece | None:
         for piece in self.materials.values():
