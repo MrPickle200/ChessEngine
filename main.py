@@ -5,13 +5,18 @@ def main():
     gameManager = GameManager(materials)
     gameManager.print_board()
     while not gameManager.game_is_over:
-        user_input = input("WHITE'S TURN: ") if gameManager.current_player == "white" else input("BLACK'S TURN: ")
+        gameManager.is_game_end()
+        if gameManager.game_is_over:
+            break
+
+        user_input = gameManager.get_user_input()
         gameManager.make_move(user_input)
         if gameManager.made_move:
-            gameManager.change_player()
-            if gameManager.is_king_in_check():
+            if gameManager._GameManager__is_king_in_check(gameManager.get_opponent()):
                 print("CHECK.")
             gameManager.print_board()
+            gameManager.change_player()
+            
             
 
 if __name__ == "__main__":

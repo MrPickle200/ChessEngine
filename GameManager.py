@@ -11,9 +11,15 @@ class GameManager:
         self.bitboards : dict[str : Piece] = {}
         self.game_is_over : bool = False
         self.made_move : bool = False
+
+        # Use for promotion
         self.promote_square : int = None
+
+        # Use for en-passant 
         self.last_move : tuple[str] = None
         self.last_moved_piece : Piece = None
+
+        # Use for castling
         self.white_king_has_moved : bool = False
         self.black_king_has_moved : bool = False
         self.rook_a1_has_moved : bool = False
@@ -33,20 +39,6 @@ class GameManager:
             elif piece.symbol != "p" and piece.color == "black":
                 self.black_occupancy |= piece.bitboard
         self.all_occupancy : int = (self.white_occupancy | self.black_occupancy)
-
-    def __update_occupancy(self) -> None:
-        self.white_occupancy : int = self.materials["white_pawns"].bitboard
-        self.black_occupancy : int = self.materials["black_pawns"].bitboard
-
-        for piece in self.materials.values():
-            if piece.symbol != "P" and piece.color == "white":
-                self.white_occupancy |= piece.bitboard
-            elif piece.symbol != "p" and piece.color == "black":
-                self.black_occupancy |= piece.bitboard
-        self.all_occupancy : int = (self.white_occupancy | self.black_occupancy)
-       
-        for piece in materials.values():
-                self.bitboards[piece.symbol] = piece 
 
     def print_board(self) -> None:
         board = ['.'] * 64
@@ -70,11 +62,31 @@ class GameManager:
         print("  +-----------------+")
         print("    a b c d e f g h")
 
+    def get_user_input(self) -> str:
+        user_input : str = input("WHITE'S TURN: ") if self.current_player == "white" else input("BLACK'S TURN: ")
+        return user_input
+
+    def win(self) -> bool:
+            if self.__is_king_in_check(self.current_player) and len(self.__get_all_legal_moves(self.current_player)): 
+                return True
+            return False
+
+    def draw(self) -> bool:
+            if not self.__is_king_in_check(self.current_player) and len(self.__get_all_legal_moves(self.current_player)): 
+                return True
+            return False
         
+    def is_game_end(self) -> None:
+        if self.win():
+            print(self.get_opponent().upper() , "WIN.")
+            self.game_is_over = True
+        elif self.draw():
+            print("DRAW.")
+            self.game_is_over = True
 
     def make_move(self, user_input : str) -> None:
             self.made_move = False
-            legal_moves : list[tuple[str]] = self.get_all_legal_moves()
+            legal_moves : list[tuple[str]] = self.__get_all_legal_moves(self.current_player)
 
             move : tuple[str] = (user_input[0:2], user_input[2:])
 
@@ -135,8 +147,8 @@ class GameManager:
 
         ## can't move pawn b7c8
                     
-    def get_all_legal_moves(self) -> list[tuple[str]]:
-        all_moves : list[tuple[str]] = self.__get_all_moves(self.current_player)
+    def __get_all_legal_moves(self, player : str) -> list[tuple[str]]:
+        all_moves : list[tuple[str]] = self.__get_all_moves(player)
         legal_moves : list[tuple[str]] = []
         root_materials = self.materials
 
@@ -147,7 +159,7 @@ class GameManager:
             self.__update_occupancy()
 
             # Create pseudo moves
-            if self.is_king_in_check():
+            if self.__is_king_in_check(self.current_player):
                 movement.undo_move()
                 self.materials = root_materials
                 self.__update_occupancy()
@@ -202,10 +214,10 @@ class GameManager:
 
         return all_moves
 
-    def is_king_in_check(self) -> bool:
-        opponent : str = "black" if self.current_player == "white" else "white"
+    def __is_king_in_check(self , player : str) -> bool:
+        opponent : str = "white" if player == "black" else "black"
         opponent_moves : list[tuple[str]] = self.__get_all_moves(opponent)
-        king_pos : str = self.materials["white_king"].get_pos()[0] if self.current_player == "white" else self.materials["black_king"].get_pos()[0]
+        king_pos : str = self.materials["white_king"].get_pos()[0] if player == "white" else self.materials["black_king"].get_pos()[0]
 
 
         # Check if king's position is in opponent attack
@@ -319,23 +331,23 @@ class GameManager:
         opponent_move : list[tuple[str]] = self.__get_all_moves(opponent)
         castling_move : list[tuple[str]] = []
 
-        if self.current_player == "white":
-            if not self.white_king_has_moved and not self.rook_h1_has_moved:
-                if is_right_side_safe("white", opponent_move) and self.__is_square_empty("f1") and self.__is_square_empty("g1"):
-                    castling_move.append(("e1" , "h1"))
-            if not self.white_king_has_moved and not self.rook_a1_has_moved:
-                if is_left_side_safe("white", opponent_move) and self.__is_square_empty("b1") and self.__is_square_empty("c1") and self.__is_square_empty("d1"):
-                    castling_move.append(("e1" , "a1"))
-        elif self.current_player == "black":
-            if not self.black_king_has_moved and not self.rook_h8_has_moved:
-                if is_right_side_safe("black", opponent_move) and self.__is_square_empty("f8") and self.__is_square_empty("g8"):
-                    castling_move.append(("e8" , "h8"))
-            if not self.black_king_has_moved and not self.rook_a8_has_moved:
-                if is_left_side_safe("black", opponent_move) and self.__is_square_empty("b8") and self.__is_square_empty("c8") and self.__is_square_empty("d8"):
-                    castling_move.append(("e8" , "a8"))
-        
+        if not self.__is_king_in_check(self.current_player):
+            if self.current_player == "white":
+                if not self.white_king_has_moved and not self.rook_h1_has_moved:
+                    if is_right_side_safe("white", opponent_move) and self.__is_square_empty("f1") and self.__is_square_empty("g1"):
+                        castling_move.append(("e1" , "h1"))
+                if not self.white_king_has_moved and not self.rook_a1_has_moved:
+                    if is_left_side_safe("white", opponent_move) and self.__is_square_empty("b1") and self.__is_square_empty("c1") and self.__is_square_empty("d1"):
+                        castling_move.append(("e1" , "a1"))
+            elif self.current_player == "black":
+                if not self.black_king_has_moved and not self.rook_h8_has_moved:
+                    if is_right_side_safe("black", opponent_move) and self.__is_square_empty("f8") and self.__is_square_empty("g8"):
+                        castling_move.append(("e8" , "h8"))
+                if not self.black_king_has_moved and not self.rook_a8_has_moved:
+                    if is_left_side_safe("black", opponent_move) and self.__is_square_empty("b8") and self.__is_square_empty("c8") and self.__is_square_empty("d8"):
+                        castling_move.append(("e8" , "a8"))
+            
         return castling_move
-
 
     def __is_square_empty(self, square : str) -> bool:
 
@@ -377,3 +389,20 @@ class GameManager:
         for key, value in table.items():
             if idx == value:
                 return key
+
+    def __update_occupancy(self) -> None:
+        self.white_occupancy : int = self.materials["white_pawns"].bitboard
+        self.black_occupancy : int = self.materials["black_pawns"].bitboard
+
+        for piece in self.materials.values():
+            if piece.symbol != "P" and piece.color == "white":
+                self.white_occupancy |= piece.bitboard
+            elif piece.symbol != "p" and piece.color == "black":
+                self.black_occupancy |= piece.bitboard
+        self.all_occupancy : int = (self.white_occupancy | self.black_occupancy)
+       
+        for piece in materials.values():
+                self.bitboards[piece.symbol] = piece 
+
+    def get_opponent(self) -> str:
+        return "white" if self.current_player == "black" else "black"
