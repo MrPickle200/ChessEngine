@@ -7,7 +7,7 @@ class GameManager:
 
     def __init__(self, materials : dict[str : Piece]):
         self.materials : dict[str : Piece] = materials
-        self.current_player : str = "white"
+        self.current_player : str = "black"
         self.bitboards : dict[str : Piece] = {}
         self.game_is_over : bool = False
         self.made_move : bool = False
@@ -26,6 +26,11 @@ class GameManager:
         self.rook_h1_has_moved : bool = False
         self.rook_a8_has_moved : bool = False
         self.rook_h8_has_moved : bool = False
+
+        # Use for 50 moves rule
+        self.is_any_pawn_moved : bool = False
+        self.is_any_piece_captured : bool = False
+        self.count_50_moves : int = 0
 
         for piece in materials.values():
                 self.bitboards[piece.symbol] = piece 
@@ -74,6 +79,16 @@ class GameManager:
     def draw(self) -> bool:
             if not self.__is_king_in_check(self.current_player) and len(self.__get_all_legal_moves(self.current_player)): 
                 return True
+            if (
+                (self.count_50_moves == 50 and not self.is_any_pawn_moved) 
+                or (self.count_50_moves == 50 and not self.is_any_piece_captured)
+                ):
+
+                self.count_50_moves = 0
+                self.is_any_pawn_moved = False if self.is_any_pawn_moved == True else False
+                self.is_any_piece_captured = False if self.is_any_piece_captured == True else False
+                
+                return True
             return False
         
     def is_game_end(self) -> None:
@@ -94,6 +109,14 @@ class GameManager:
                     print(f"{user_input} IS A ILLEGAL MOVE. PLEASE TRY AGAIN !!!")
             else :
                 movement = Move(self.materials, move)
+
+                # 50 moves rule
+                if not self.is_any_piece_captured:
+                    self.is_any_piece_captured = True if movement.is_capture() else False
+                if not self.is_any_pawn_moved:
+                    self.is_any_pawn_moved = True if movement.piece.symbol.upper() == "P" else False
+                self.count_50_moves += 1
+                
 
                 # Track en-passant move
                 if self.last_move and self.last_moved_piece:
@@ -142,10 +165,11 @@ class GameManager:
                 self.materials = movement.update_materials()
                 self.__update_occupancy()
                 self.made_move = True
+
+                # Promote
                 if self.__promotion():
                     self.__handle_promote()
 
-        ## can't move pawn b7c8
                     
     def __get_all_legal_moves(self, player : str) -> list[tuple[str]]:
         all_moves : list[tuple[str]] = self.__get_all_moves(player)
@@ -241,7 +265,7 @@ class GameManager:
                     signal = True
                     break
             self.materials["white_pawns"] = white_pawns
-        else:
+        elif self.current_player == "black":
             black_pawns : Piece = self.materials["black_pawns"]
             for square in black_pawns.get_squares():
                 if 0 <= square < 8:
@@ -254,7 +278,7 @@ class GameManager:
         return signal
     
     def __handle_promote(self) -> None:
-        if self.promote_square:
+        if not (self.promote_square is None):
             bitboard : int = 1 << self.promote_square
 
             if self.current_player == "white":
@@ -267,7 +291,7 @@ class GameManager:
                     self.materials["white_knights"].bitboard |= bitboard
                 elif user_input == "B":
                     self.materials["white_bishops"].bitboard |= bitboard
-            else:
+            elif self.current_player == "black":
                 user_input = input("PROMOTE TO (q/r/n/b)?: ")
                 if user_input == "q":
                     self.materials["black_queen"].bitboard |= bitboard
