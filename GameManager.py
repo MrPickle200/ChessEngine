@@ -7,7 +7,7 @@ class GameManager:
 
     def __init__(self, materials : dict[str : Piece]):
         self.materials : dict[str : Piece] = materials
-        self.current_player : str = "black"
+        self.current_player : str = "white"
         self.bitboards : dict[str : Piece] = {}
         self.game_is_over : bool = False
         self.made_move : bool = False
@@ -99,14 +99,12 @@ class GameManager:
             print("DRAW.")
             self.game_is_over = True
 
-    def make_move(self, user_input : str) -> None:
+    def make_move(self, move : tuple[str]) -> None:
             self.made_move = False
             legal_moves : list[tuple[str]] = self.__get_all_legal_moves(self.current_player)
 
-            move : tuple[str] = (user_input[0:2], user_input[2:])
-
             if move not in legal_moves:
-                    print(f"{user_input} IS A ILLEGAL MOVE. PLEASE TRY AGAIN !!!")
+                    print(f"{move[0] + move[1]} IS A ILLEGAL MOVE. PLEASE TRY AGAIN !!!")
             else :
                 movement = Move(self.materials, move)
 
@@ -429,5 +427,102 @@ class GameManager:
 
     def get_opponent(self) -> str:
         return "white" if self.current_player == "black" else "black"
-
     
+    def convert_idx_to_pos_for_UI(self, idx:int) -> str:
+        table = {
+            "a1":0,
+            "b1":1,
+            "c1":2,
+            "d1":3,
+            "e1":4,
+            "f1":5,
+            "g1":6,
+            "h1":7
+                }
+        
+        for i in range(2,9):
+            for char in ['a','b','c','d','e','f','g','h']:
+                table[char + str(i)] = table[char + str(i - 1)] + 8
+        for key, value in table.items():
+            if idx == value:
+                return key
+
+    def convert_pos_to_idx_for_UI(self, pos:str) -> int:
+        table = {
+            "a1":0,
+            "b1":1,
+            "c1":2,
+            "d1":3,
+            "e1":4,
+            "f1":5,
+            "g1":6,
+            "h1":7
+                }
+        for i in range(2,9):
+            for char in ['a','b','c','d','e','f','g','h']:
+                table[char + str(i)] = table[char + str(i - 1)] + 8
+        return table[pos]
+
+    def get_all_legal_moves(self, player : str) -> list[tuple[str]]:
+        all_moves : list[tuple[str]] = self.__get_all_moves(player)
+        legal_moves : list[tuple[str]] = []
+        root_materials = self.materials
+
+        for move in all_moves:
+            movement = Move(self.materials, move)
+            movement.make_move()
+            self.materials = movement.update_materials()
+            self.__update_occupancy()
+
+            # Create pseudo moves
+            if self.__is_king_in_check(self.current_player):
+                movement.undo_move()
+                self.materials = root_materials
+                self.__update_occupancy()
+                continue
+            
+            movement.undo_move()
+            self.materials = root_materials
+            self.__update_occupancy()
+            legal_moves.append(move)
+
+        if self.last_move and self.last_moved_piece:
+            legal_moves.extend(self.__en_passant())
+
+        legal_moves.extend(self.__castling())
+
+        return legal_moves
+    
+    def get_piece_at(self, square : int) -> Piece:
+        for piece in self.materials.values():
+            if ((piece.bitboard >> square) & 1) == 1:
+                return piece
+    
+    def generate_move_for_single_piece(self, piece : Piece) -> list[tuple[str]]:
+        move_generator = Move_Generator()
+
+        if piece.symbol == 'P': 
+            return move_generator.generate_white_pawns_move(piece, self.white_occupancy, self.black_occupancy)
+        elif piece.symbol == 'R':
+            return move_generator.generate_white_rooks_move(piece, self.white_occupancy, self.black_occupancy)
+        elif piece.symbol == 'N':
+            return move_generator.generate_white_knights_move(piece, self.white_occupancy, self.black_occupancy)
+        elif piece.symbol == 'B':
+            return move_generator.generate_white_bishops_move(piece, self.white_occupancy, self.black_occupancy)
+        elif piece.symbol == 'Q':
+            return move_generator.generate_white_queens_move(piece, self.white_occupancy, self.black_occupancy)
+        elif piece.symbol == 'K':
+            return move_generator.generate_white_king_move(piece, self.white_occupancy, self.black_occupancy)
+        elif piece.symbol == 'p': 
+            return move_generator.generate_black_pawns_move(piece, self.white_occupancy, self.black_occupancy)
+        elif piece.symbol == 'r':
+            return move_generator.generate_black_rooks_move(piece, self.white_occupancy, self.black_occupancy)
+        elif piece.symbol == 'n':
+            return move_generator.generate_black_knights_move(piece, self.white_occupancy, self.black_occupancy)
+        elif piece.symbol == 'b':
+            return move_generator.generate_black_bishops_move(piece, self.white_occupancy, self.black_occupancy)
+        elif piece.symbol == 'q':
+            return move_generator.generate_black_queens_move(piece, self.white_occupancy, self.black_occupancy)
+        elif piece.symbol == 'k':
+            return move_generator.generate_black_king_move(piece, self.white_occupancy, self.black_occupancy)
+        
