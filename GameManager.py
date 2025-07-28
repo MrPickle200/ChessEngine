@@ -169,8 +169,7 @@ class GameManager:
                 # Promote
                 if self.__promotion():
                     self.__handle_promote()
-
-                    
+                  
     def __get_all_legal_moves(self, player : str) -> list[tuple[str]]:
         all_moves : list[tuple[str]] = self.__get_all_moves(player)
         legal_moves : list[tuple[str]] = []
@@ -430,3 +429,5 @@ class GameManager:
 
     def get_opponent(self) -> str:
         return "white" if self.current_player == "black" else "black"
+
+    

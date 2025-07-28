@@ -6,17 +6,22 @@ class Piece:
     def set_square(self, square:int):
         #set piece at targeted square
         self.bitboard |= (1 << square)
+
     def clear_square(self, square:int):
         #clear piece at targeted square
         self.bitboard &= ~(1 << square)
+
     def is_on_square(self, square:int) -> bool:
         #check if piece is on targeted square
         return (self.bitboard >> square) & 1 == 1
+    
     def get_squares(self) -> list[int]:
         # get squares wwhere pieces on
         return [i for i in range(64) if (self.bitboard >> i) & 1]
+    
     def get_pos(self) -> list[str]:
         return [self.__convert_idx_to_pos(i) for i in range(64) if (self.bitboard >> i) & 1]
+    
     def __convert_idx_to_pos(self, idx:int) -> str:
         table = {
             "a1":0,
@@ -34,3 +39,7 @@ class Piece:
         for key, value in table.items():
             if idx == value:
                 return key
+            
+    def get_image_key(self):
+        color_char = 'w' if self.color == 'white' else 'b'
+        return color_char + self.symbol.upper()
