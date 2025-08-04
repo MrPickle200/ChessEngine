@@ -35,56 +35,71 @@ def load_piece_images():
         img = pygame.image.load(f"images/{name}.svg")
         PIECE_IMAGES[name] = pygame.transform.scale(img, (SQUARE_SIZE, SQUARE_SIZE))
 
-def draw_board(screen = screen, width : int = WIDTH, height : int = HEIGHT, square_size : int = SQUARE_SIZE) -> None:
-    for y in range(0, height // square_size):
-        for x in range(0, width // square_size):
-            if x % 2 == y % 2 :
-                pygame.draw.rect(screen, LIGHT, (x * square_size, y * square_size, square_size, square_size))
-            else:
-                pygame.draw.rect(screen, DARK, (x * square_size, y * square_size, square_size, square_size))
-            if SELECTED_POS:
-                if (7 - y) * 8 + x == SELECTED_POS:
-                    pygame.draw.rect(screen, WHITE, (x * square_size, y * square_size, square_size, square_size))
+def draw_board(screen=screen, width: int=WIDTH, height: int=HEIGHT, square_size: int=SQUARE_SIZE) -> None:
+    for y in range(8):
+        for x in range(8):
+            screen_y = 7 - y  # flip vertical so white is at bottom
+            rect = pygame.Rect(x * square_size, screen_y * square_size, square_size, square_size)
+
+            # Color the square
+            color = LIGHT if (x + y) % 2 == 0 else DARK
+            pygame.draw.rect(screen, color, rect)
+
+            # Highlight selected square
+            if SELECTED_POS == y * 8 + x:
+                pygame.draw.rect(screen, WHITE, rect)
+
+            # Highlight valid moves for selected piece
             if SELECTED_PIECE:
-                valid_moves : list[tuple[str]] = gameEngine.generate_move_for_single_piece(SELECTED_PIECE)
+                valid_moves: list[tuple[str]] = gameEngine.generate_move_for_single_piece(SELECTED_PIECE)
                 for move in valid_moves:
-                    
-                    square = gameEngine.convert_pos_to_idx_for_UI(move[1])
-                    pos = gameEngine.convert_idx_to_pos_for_UI(SELECTED_POS)
-                    if move[0] == pos:
-                        y = 7 - square // 8
-                        x = square % 8
-                        pygame.draw.rect(screen, WHITE, (x * square_size, y * square_size, square_size, square_size))
+                    from_pos = gameEngine.convert_idx_to_pos_for_UI(SELECTED_POS)
+                    if move[0] == from_pos:
+                        to_sq = gameEngine.convert_pos_to_idx_for_UI(move[1])
+                        to_x = to_sq % 8
+                        to_y = 7 - (to_sq // 8)
+                        pygame.draw.rect(screen, WHITE, pygame.Rect(to_x * square_size, to_y * square_size, square_size, square_size))
 
 
-def draw_pieces(screen = screen, pieces = gameEngine.materials.values()):
-    
+
+def draw_pieces(screen=screen, pieces=gameEngine.materials.values()):
+    board = ["."] * 64
+
     for piece in pieces:
-        image_key = piece.get_image_key()
-        image = PIECE_IMAGES[image_key]
-        for i in range(64):
-            if (piece.bitboard >> i) & 1:
-                row = (63 - i) // 8
-                col = (63 - i) % 8
-                screen.blit(image, (col * SQUARE_SIZE, row * SQUARE_SIZE))
+        for square in range(64):
+            if (piece.bitboard >> square) & 1:
+                board[square] = piece
+
+    for idx in range(64):
+        piece = board[idx]
+        if piece != ".":
+            image_key = piece.get_image_key()
+            image = PIECE_IMAGES[image_key]
+
+            x = idx % 8
+            y = 7 - (idx // 8)  # Flip vertically so a1 is bottom-left
+            screen.blit(image, (x * SQUARE_SIZE, y * SQUARE_SIZE))
+
+
+
+
 
 def main() -> None:
     global SELECTED_POS, SELECTED_PIECE
-
+    load_piece_images()
     move : list[str] = []
     running = True
-    load_piece_images()
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_pos = pygame.mouse.get_pos()
-                for file in range(8):
-                    for rank in range(8):
-                        square : int = (7 - rank) * 8 + file
-                        if file * SQUARE_SIZE <= mouse_pos[0] < (file + 1) * SQUARE_SIZE \
-                            and rank * SQUARE_SIZE <= mouse_pos[1] < (rank + 1) * SQUARE_SIZE:
+                for y in range(8):
+                    for x in range(8):
+                        square : int = (7 - y) * 8 + x
+                        if x * SQUARE_SIZE <= mouse_pos[0] < (x + 1) * SQUARE_SIZE \
+                            and y * SQUARE_SIZE <= mouse_pos[1] < (y + 1) * SQUARE_SIZE:
                                 
                                 SELECTED_POS = square
                                 if gameEngine.get_piece_at(SELECTED_POS):
@@ -92,8 +107,7 @@ def main() -> None:
                                 # If there is piece at SELECTED_POS, continue processing.
                                 if SELECTED_PIECE:
                                     move.append(gameEngine.convert_idx_to_pos_for_UI(SELECTED_POS))  
-                                    print("SELECTED POS:", SELECTED_POS)
-                                    print("SELECTED PIECE:" , SELECTED_PIECE.symbol)
+                                    
 
                                 if len(move) == 2:
                                     print("START CHECKING.......")
@@ -101,6 +115,8 @@ def main() -> None:
                                         print("OK........")
                                         gameEngine.make_move(tuple(move))
                                         gameEngine.change_player()
+                                    else:
+                                        print("NOT OK....")
                                     move = []
                                     SELECTED_POS = None
                                     SELECTED_PIECE = None

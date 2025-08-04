@@ -54,8 +54,7 @@ class GameManager:
             for square in range(64):
                 if (bb.bitboard >> square) & 1:
                     board[square] = piece
-
-        # Print the board top-down
+        #Print the board top-down
         print("  +-----------------+")
         for rank in range(7, -1, -1):  # rank 8 to 1
             row = f"{rank + 1} | "
@@ -107,7 +106,6 @@ class GameManager:
                     print(f"{move[0] + move[1]} IS A ILLEGAL MOVE. PLEASE TRY AGAIN !!!")
             else :
                 movement = Move(self.materials, move)
-
                 # 50 moves rule
                 if not self.is_any_piece_captured:
                     self.is_any_piece_captured = True if movement.is_capture() else False
@@ -129,9 +127,10 @@ class GameManager:
 
                 # Castling signal
                 if move in self.__castling():
-                    if move[1][0] == "h":
+                    movement.castling = True
+                    if move[1][0] == "g":
                         movement.castling_dir = "right"
-                    elif move[1][0] == "a":
+                    elif move[1][0] == "b":
                         movement.castling_dir = "left"
                 movement.make_move()
                 
@@ -165,8 +164,8 @@ class GameManager:
                 self.made_move = True
 
                 # Promote
-                if self.__promotion():
-                    self.__handle_promote()
+                # if self.__promotion():
+                #     self.__handle_promote()
                   
     def __get_all_legal_moves(self, player : str) -> list[tuple[str]]:
         all_moves : list[tuple[str]] = self.__get_all_moves(player)
@@ -194,7 +193,7 @@ class GameManager:
         if self.last_move and self.last_moved_piece:
             legal_moves.extend(self.__en_passant())
 
-        legal_moves.extend(self.__castling())
+        #legal_moves.extend(self.__castling())
 
         return legal_moves
 
@@ -356,17 +355,17 @@ class GameManager:
             if self.current_player == "white":
                 if not self.white_king_has_moved and not self.rook_h1_has_moved:
                     if is_right_side_safe("white", opponent_move) and self.__is_square_empty("f1") and self.__is_square_empty("g1"):
-                        castling_move.append(("e1" , "h1"))
+                        castling_move.append(("e1" , "g1"))
                 if not self.white_king_has_moved and not self.rook_a1_has_moved:
                     if is_left_side_safe("white", opponent_move) and self.__is_square_empty("b1") and self.__is_square_empty("c1") and self.__is_square_empty("d1"):
-                        castling_move.append(("e1" , "a1"))
+                        castling_move.append(("e1" , "b1"))
             elif self.current_player == "black":
                 if not self.black_king_has_moved and not self.rook_h8_has_moved:
                     if is_right_side_safe("black", opponent_move) and self.__is_square_empty("f8") and self.__is_square_empty("g8"):
-                        castling_move.append(("e8" , "h8"))
+                        castling_move.append(("e8" , "g8"))
                 if not self.black_king_has_moved and not self.rook_a8_has_moved:
                     if is_left_side_safe("black", opponent_move) and self.__is_square_empty("b8") and self.__is_square_empty("c8") and self.__is_square_empty("d8"):
-                        castling_move.append(("e8" , "a8"))
+                        castling_move.append(("e8" , "b8"))
             
         return castling_move
 
@@ -489,7 +488,7 @@ class GameManager:
         if self.last_move and self.last_moved_piece:
             legal_moves.extend(self.__en_passant())
 
-        legal_moves.extend(self.__castling())
+        #legal_moves.extend(self.__castling())
 
         return legal_moves
     

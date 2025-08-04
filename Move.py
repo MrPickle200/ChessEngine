@@ -9,12 +9,13 @@ class Move:
         self.target : Piece = None
         self.en_passant_sq : int = None
         self.castling_dir : str = ""
+        self.castling : bool = False
 
         for piece in materials.values():
             if ((piece.bitboard >> self.__convert_pos_to_idx(move[0])) & 1) == 1:
                 self.piece = piece
             if ((piece.bitboard >> self.__convert_pos_to_idx(move[1])) & 1) == 1:
-                self.target = piece
+                self.target = piece        
 
     def __convert_pos_to_idx(self,pos:str) -> int:
         table = {
@@ -56,7 +57,7 @@ class Move:
         self.piece.clear_square(target)
         if self.target:
             self.target.set_square(target)
-    
+        
     def update_materials(self) -> dict[str : Piece]:
         return self.materials
 
