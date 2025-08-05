@@ -11,7 +11,6 @@ class GameManager:
         self.bitboards : dict[str : Piece] = {}
         self.game_is_over : bool = False
         self.made_move : bool = False
-
         # Use for promotion
         self.promote_square : int = None
 
@@ -98,75 +97,92 @@ class GameManager:
             print("DRAW.")
             self.game_is_over = True
 
-    def make_move(self, move : tuple[str]) -> None:
+    def make_move(self, player : str, move : tuple[str]) -> Move | None:
             self.made_move = False
-            legal_moves : list[tuple[str]] = self.__get_all_legal_moves(self.current_player)
+            legal_moves : list[tuple[str]] = self.__get_all_legal_moves(player= player)
 
             if move not in legal_moves:
-                    print(f"{move[0] + move[1]} IS A ILLEGAL MOVE. PLEASE TRY AGAIN !!!")
+                    print(legal_moves)
+                    print(f"{player.upper()}'S TUNR: {move[0] + move[1]} IS A ILLEGAL MOVE. PLEASE TRY AGAIN !!!")
             else :
+                print(f"{player.upper()}'S TUNR: {move[0] + move[1]} IS A LEGAL MOVE.")
                 movement = Move(self.materials, move)
-                # 50 moves rule
-                if not self.is_any_piece_captured:
-                    self.is_any_piece_captured = True if movement.is_capture() else False
-                if not self.is_any_pawn_moved:
-                    self.is_any_pawn_moved = True if movement.piece.symbol.upper() == "P" else False
-                self.count_50_moves += 1
-                
-
-                # Track en-passant move
-                if self.last_move and self.last_moved_piece:
-                    en_passant : list[tuple[str]] = self.__en_passant()
-                    if move in en_passant:
-                        if self.current_player == "white":
-                            movement.en_passant_sq = self.__convert_pos_to_idx(move[1]) - 8
-                        else:
-                            movement.en_passant_sq = self.__convert_pos_to_idx(move[1]) + 8
-                self.last_move = move
-                self.last_moved_piece = movement.get_piece()
-
-                # Castling signal
-                if move in self.__castling():
-                    movement.castling = True
-                    if move[1][0] == "g":
-                        movement.castling_dir = "right"
-                    elif move[1][0] == "b":
-                        movement.castling_dir = "left"
                 movement.make_move()
-                
-                # Track for castling
-
-                if self.current_player == "white":
-                    # Track the king
-                    if not self.white_king_has_moved and movement.is_king_moved():
-                        self.white_king_has_moved = True
-                    # Track the rooks
-                    if movement.piece.symbol == "R":
-                        if move[0] == "a1":
-                            self.rook_a1_has_moved = True
-                        elif move[0] == "h1":
-                            self.rook_h1_has_moved = True
-
-                elif self.current_player == "black" and not self.black_king_has_moved and movement.is_king_moved():
-                    # Track the king
-                    if not self.black_king_has_moved and movement.is_king_moved():
-                        self.black_king_has_moved = True
-                    # Track the rooks
-                    if movement.piece.symbol == "r":
-                        if move[0] == "a8":
-                            self.rook_a8_has_moved = True
-                        elif move[0] == "h8":
-                            self.rook_h8_has_moved = True
-
-                # Update materials
                 self.materials = movement.update_materials()
                 self.__update_occupancy()
                 self.made_move = True
 
+                # Return undo information
+                return movement
+            
+                # 50 moves rule
+                # if not self.is_any_piece_captured:
+                #     self.is_any_piece_captured = True if movement.is_capture() else False
+                # if not self.is_any_pawn_moved:
+                #     self.is_any_pawn_moved = True if movement.piece.symbol.upper() == "P" else False
+                # self.count_50_moves += 1
+                
+
+                # # Track en-passant move
+                # if self.last_move and self.last_moved_piece:
+                #     en_passant : list[tuple[str]] = self.__en_passant()
+                #     if move in en_passant:
+                #         if player == "white":
+                #             movement.en_passant_sq = self.__convert_pos_to_idx(move[1]) - 8
+                #         else:
+                #             movement.en_passant_sq = self.__convert_pos_to_idx(move[1]) + 8
+                # self.last_move = move
+                # self.last_moved_piece = movement.get_piece()
+
+                # # Castling signal
+                # if move in self.__castling():
+                #     movement.castling = True
+                #     if move[1][0] == "g":
+                #         movement.castling_dir = "right"
+                #     elif move[1][0] == "b":
+                #         movement.castling_dir = "left"
+                # movement.make_move()
+                
+                # # Track for castling
+
+                # if player == "white":
+                #     # Track the king
+                #     if not self.white_king_has_moved and movement.is_king_moved():
+                #         self.white_king_has_moved = True
+                #     # Track the rooks
+                #     if movement.piece.symbol == "R":
+                #         if move[0] == "a1":
+                #             self.rook_a1_has_moved = True
+                #         elif move[0] == "h1":
+                #             self.rook_h1_has_moved = True
+
+                # elif player == "black" and not self.black_king_has_moved and movement.is_king_moved():
+                #     # Track the king
+                #     if not self.black_king_has_moved and movement.is_king_moved():
+                #         self.black_king_has_moved = True
+                #     # Track the rooks
+                #     if movement.piece.symbol == "r":
+                #         if move[0] == "a8":
+                #             self.rook_a8_has_moved = True
+                #         elif move[0] == "h8":
+                #             self.rook_h8_has_moved = True
+
+                # Update materials
+                # self.materials = movement.update_materials()
+                # self.__update_occupancy()
+                # self.made_move = True
+
                 # Promote
                 # if self.__promotion():
                 #     self.__handle_promote()
-                  
+    def undo_move(self, undo_info : Move) -> None:
+        if self.made_move and undo_info:
+            movement = undo_info
+            movement.undo_move()
+            self.materials = movement.update_materials()
+            self.__update_occupancy()
+            self.made_move = False
+                    
     def __get_all_legal_moves(self, player : str) -> list[tuple[str]]:
         all_moves : list[tuple[str]] = self.__get_all_moves(player)
         legal_moves : list[tuple[str]] = []
@@ -525,3 +541,16 @@ class GameManager:
         elif piece.symbol == 'k':
             return move_generator.generate_black_king_move(piece, self.white_occupancy, self.black_occupancy)
         
+    def update_occupancy(self) -> None:
+        self.white_occupancy : int = self.materials["white_pawns"].bitboard
+        self.black_occupancy : int = self.materials["black_pawns"].bitboard
+
+        for piece in self.materials.values():
+            if piece.symbol != "P" and piece.color == "white":
+                self.white_occupancy |= piece.bitboard
+            elif piece.symbol != "p" and piece.color == "black":
+                self.black_occupancy |= piece.bitboard
+        self.all_occupancy : int = (self.white_occupancy | self.black_occupancy)
+       
+        for piece in materials.values():
+                self.bitboards[piece.symbol] = piece 

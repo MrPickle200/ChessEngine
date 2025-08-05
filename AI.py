@@ -1,17 +1,19 @@
 from Piece import Piece
 from GameManager import GameManager
+from Materials import materials
 import math
 
 class State:
-    def __init__(self, score : int, materials : dict):
+    def __init__(self, score : int, materials : dict, move : tuple[str] = None):
         self.score = score
         self.materials = materials
+        self.move = move
 
 class AI:
     def __init__(self):
         pass
 
-    def evaluate(self, move : tuple[str], gameEngine : GameManager) -> State:
+    def evaluate(self, gameEngine : GameManager) -> State:
 
         PIECE_VALUES = {
             'P': 100,
@@ -22,7 +24,6 @@ class AI:
             'K': 10000
         }
         
-        gameEngine.make_move(move= move)
         score : int = 0
         for piece in gameEngine.materials.values():
             count = bin(piece.bitboard).count("1")
@@ -35,34 +36,43 @@ class AI:
 
         return State(score= score, materials= gameEngine.materials)
     
-    def minimax(self, gameEngine : GameManager, move : tuple[str], depth : int, maximizing : bool) -> State:
-        player = "white" if maximizing else "black"
-
+    def minimax(self, gameEngine: GameManager, depth: int, maximizing: bool) -> State:
         if depth == 0 or gameEngine.game_is_over:
-            evaluation : State = self.evaluate(move= move, gameEngine= gameEngine)
-            gameEngine.materials = evaluation.materials
-            return evaluation
-        
+            return self.evaluate(gameEngine)
+
+        best_state = None
+
+        all_moves = gameEngine.get_all_legal_moves(player="white" if maximizing else "black")
+
+        if not all_moves:
+            # Return evaluation anyway if no legal moves (e.g. stalemate/checkmate)
+            return self.evaluate(gameEngine)
+
         if maximizing:
-            all_moves = gameEngine.get_all_legal_moves(player= player)
-            max_score = -math.inf
-
-            for MOVE in all_moves:
-                evaluation : State = self.minimax(gameEngine= gameEngine, move= MOVE, depth= depth - 1, maximizing= False)
-                if max_score <= evaluation.score:
-                    gameEngine.materials = evaluation.materials
-                max_score = max(max_score, evaluation.score)
-
+            best_score = -math.inf
+            for move in all_moves:
+                undo_info = gameEngine.make_move("white", move)
+                state = self.minimax(gameEngine, depth - 1, maximizing=False)
+                gameEngine.undo_move(undo_info= undo_info)
+                if state and state.score > best_score:
+                    best_score = state.score
+                    best_state = State(score=best_score, materials=gameEngine.materials, move=move)
         else:
-            all_moves = gameEngine.get_all_legal_moves(player= player)
-            min_score = math.inf
+            best_score = math.inf
+            for move in all_moves:
+                undo_info = gameEngine.make_move("black", move)
+                state = self.minimax(gameEngine, depth - 1, maximizing=True)
+                gameEngine.undo_move(undo_info= undo_info)
+                if state and state.score < best_score:
+                    best_score = state.score
+                    best_state = State(score=best_score, materials=gameEngine.materials, move=move)
 
-            for MOVE in all_moves:
-                evaluation : State = self.minimax(gameEngine= gameEngine, move= MOVE, depth= depth - 1, maximizing= True)
-                if min_score >= evaluation.score:
-                    gameEngine.materials = evaluation.materials
-                min_score = min(max_score, evaluation.score)
-    
+        return best_state
+
         
+ai = AI()
+gameEngine = GameManager(materials= materials)
 
+best_state = ai.minimax(gameEngine= gameEngine, depth= 2, maximizing= True)
 
+print(best_state.move)
