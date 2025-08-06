@@ -12,6 +12,82 @@ class State:
 class AI:
     def __init__(self):
         pass
+    def get_piece_square_value(self, piece: Piece, square: int) -> int:
+        PAWN_TABLE = [
+            0,  0,  0,  0,  0,  0,  0,  0,
+            5, 10, 10,-20,-20, 10, 10,  5,
+            5, -5,-10,  0,  0,-10, -5,  5,
+            0,  0,  0, 20, 20,  0,  0,  0,
+            5,  5, 10,25, 25, 10,  5,  5,
+            10, 10, 20,30, 30, 20, 10, 10,
+            50, 50, 50,50, 50, 50, 50, 50,
+            0,  0,  0,  0,  0,  0,  0,  0
+        ]
+        KNIGHT_TABLE = [
+            -50,-40,-30,-30,-30,-30,-40,-50,
+            -40,-20,  0,  5,  5,  0,-20,-40,
+            -30,  5, 10,15, 15, 10,  5,-30,
+            -30,  0, 15,20, 20, 15,  0,-30,
+            -30,  5, 15,20, 20, 15,  5,-30,
+            -30,  0, 10,15, 15, 10,  0,-30,
+            -40,-20,  0,  0,  0,  0,-20,-40,
+            -50,-40,-30,-30,-30,-30,-40,-50
+        ]
+        BISHOP_TABLE = [
+            -20,-10,-10,-10,-10,-10,-10,-20,
+            -10,  5,  0,  0,  0,  0,  5,-10,
+            -10, 10, 10,10, 10, 10, 10,-10,
+            -10,  0, 10,10, 10, 10,  0,-10,
+            -10,  5,  5,10, 10,  5,  5,-10,
+            -10,  0,  5,10, 10,  5,  0,-10,
+            -10,  0,  0,  0,  0,  0,  0,-10,
+            -20,-10,-10,-10,-10,-10,-10,-20
+        ]
+        ROOK_TABLE = [
+            0,  0,  0,  0,  0,  0,  0,  0,
+            5, 10, 10, 10, 10, 10, 10,  5,
+            -5,  0,  0,  0,  0,  0,  0, -5,
+            -5,  0,  0,  0,  0,  0,  0, -5,
+            -5,  0,  0,  0,  0,  0,  0, -5,
+            -5,  0,  0,  0,  0,  0,  0, -5,
+            -5,  0,  0,  0,  0,  0,  0, -5,
+            0,  0,  0,  5,  5,  0,  0,  0
+        ]
+        QUEEN_TABLE = [
+            -20,-10,-10, -5, -5,-10,-10,-20,
+            -10,  0,  0,  0,  0,  0,  0,-10,
+            -10,  0,  5,  5,  5,  5,  0,-10,
+            -5,  0,  5,  5,  5,  5,  0, -5,
+            0,  0,  5,  5,  5,  5,  0, -5,
+            -10,  5,  5,  5,  5,  5,  0,-10,
+            -10,  0,  5,  0,  0,  0,  0,-10,
+            -20,-10,-10, -5, -5,-10,-10,-20
+        ]
+        KING_TABLE_MID = [
+            -30,-40,-40,-50,-50,-40,-40,-30,
+            -30,-40,-40,-50,-50,-40,-40,-30,
+            -30,-40,-40,-50,-50,-40,-40,-30,
+            -30,-40,-40,-50,-50,-40,-40,-30,
+            -20,-30,-30,-40,-40,-30,-30,-20,
+            -10,-20,-20,-20,-20,-20,-20,-10,
+            20, 20,  0,  0,  0,  0, 20, 20,
+            20, 30, 10,  0,  0, 10, 30, 20
+        ]
+
+        if piece.symbol.upper() == "P":
+            return PAWN_TABLE[square if piece.color == "white" else 63 - square]
+        elif piece.symbol.upper() == "N":
+            return KNIGHT_TABLE[square if piece.color == "white" else 63 - square]
+        elif piece.symbol.upper() == "B":
+            return BISHOP_TABLE[square if piece.color == "white" else 63 - square]
+        elif piece.symbol.upper() == "R":
+            return ROOK_TABLE[square if piece.color == "white" else 63 - square]
+        elif piece.symbol.upper() == "Q":
+            return QUEEN_TABLE[square if piece.color == "white" else 63 - square]
+        elif piece.symbol.upper() == "K":
+            return KING_TABLE_MID[square if piece.color == "white" else 63 - square]
+        
+        return 0
 
     def evaluate(self, gameEngine : GameManager) -> State:
 
@@ -33,6 +109,15 @@ class AI:
                 score += value * count
             else:
                 score -= value * count
+
+            for square in range(64):
+                if (piece.bitboard >> square) & 1:
+                    psq_bonus = self.get_piece_square_value(piece, square)
+                    if piece.color == "white":
+                        score += value + psq_bonus
+                    else:
+                        score -= value + psq_bonus
+                    break
 
         return State(score= score, materials= gameEngine.materials)
     
