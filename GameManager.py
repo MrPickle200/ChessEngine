@@ -102,10 +102,9 @@ class GameManager:
             legal_moves : list[tuple[str]] = self.__get_all_legal_moves(player= player)
 
             if move not in legal_moves:
-                    print(legal_moves)
-                    print(f"{player.upper()}'S TUNR: {move[0] + move[1]} IS A ILLEGAL MOVE. PLEASE TRY AGAIN !!!")
+                    print(f"{player.upper()}'S TUNR: {move} IS A ILLEGAL MOVE. PLEASE TRY AGAIN !!!")
             else :
-                print(f"{player.upper()}'S TUNR: {move[0] + move[1]} IS A LEGAL MOVE.")
+                print(f"{player.upper()}'S TUNR: {move} IS A LEGAL MOVE.")
                 movement = Move(self.materials, move)
                 movement.make_move()
                 self.materials = movement.update_materials()
@@ -176,12 +175,12 @@ class GameManager:
                 # if self.__promotion():
                 #     self.__handle_promote()
     def undo_move(self, undo_info : Move) -> None:
-        if self.made_move and undo_info:
+        if undo_info:
             movement = undo_info
             movement.undo_move()
             self.materials = movement.update_materials()
             self.__update_occupancy()
-            self.made_move = False
+
                     
     def __get_all_legal_moves(self, player : str) -> list[tuple[str]]:
         all_moves : list[tuple[str]] = self.__get_all_moves(player)

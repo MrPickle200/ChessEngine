@@ -3,8 +3,10 @@ class A:
         self.val = 5
 def add(x : A):
     x.val = 6
+    print(x.val)
+    return x
 
 a = A()
 add(a)
-print(a.val) # OUTPUT = 6
+
 

@@ -1,7 +1,9 @@
 from GameManager import GameManager
 from Materials import materials
 from Piece import Piece
+from AI import AI
 
+import math
 import pygame
 pygame.init()
 
@@ -60,8 +62,6 @@ def draw_board(screen=screen, width: int=WIDTH, height: int=HEIGHT, square_size:
                         to_y = 7 - (to_sq // 8)
                         pygame.draw.rect(screen, WHITE, pygame.Rect(to_x * square_size, to_y * square_size, square_size, square_size))
 
-
-
 def draw_pieces(screen=screen, pieces=gameEngine.materials.values()):
     board = ["."] * 64
 
@@ -80,48 +80,48 @@ def draw_pieces(screen=screen, pieces=gameEngine.materials.values()):
             y = 7 - (idx // 8)  # Flip vertically so a1 is bottom-left
             screen.blit(image, (x * SQUARE_SIZE, y * SQUARE_SIZE))
 
-
-
-
-
 def main() -> None:
     global SELECTED_POS, SELECTED_PIECE
     load_piece_images()
     move : list[str] = []
+    ai = AI()
     running = True
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                mouse_pos = pygame.mouse.get_pos()
-                for y in range(8):
-                    for x in range(8):
-                        square : int = (7 - y) * 8 + x
-                        if x * SQUARE_SIZE <= mouse_pos[0] < (x + 1) * SQUARE_SIZE \
-                            and y * SQUARE_SIZE <= mouse_pos[1] < (y + 1) * SQUARE_SIZE:
-                                
-                                SELECTED_POS = square
-                                if gameEngine.get_piece_at(SELECTED_POS):
-                                    SELECTED_PIECE = gameEngine.get_piece_at(SELECTED_POS)
-                                # If there is piece at SELECTED_POS, continue processing.
-                                if SELECTED_PIECE:
-                                    move.append(gameEngine.convert_idx_to_pos_for_UI(SELECTED_POS))  
+            if gameEngine.current_player == "white":
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    mouse_pos = pygame.mouse.get_pos()
+                    for y in range(8):
+                        for x in range(8):
+                            square : int = (7 - y) * 8 + x
+                            if x * SQUARE_SIZE <= mouse_pos[0] < (x + 1) * SQUARE_SIZE \
+                                and y * SQUARE_SIZE <= mouse_pos[1] < (y + 1) * SQUARE_SIZE:
                                     
+                                    SELECTED_POS = square
+                                    if gameEngine.get_piece_at(SELECTED_POS):
+                                        SELECTED_PIECE = gameEngine.get_piece_at(SELECTED_POS)
+                                    # If there is piece at SELECTED_POS, continue processing.
+                                    if SELECTED_PIECE:
+                                        move.append(gameEngine.convert_idx_to_pos_for_UI(SELECTED_POS))
 
-                                if len(move) == 2:
-                                    print("START CHECKING.......")
-                                    if move[0] != move[1] and tuple(move) in gameEngine.get_all_legal_moves(gameEngine.current_player):
-                                        print("OK........")
-                                        gameEngine.make_move(tuple(move))
-                                        gameEngine.change_player()
-                                    else:
-                                        print("NOT OK....")
-                                    move = []
-                                    SELECTED_POS = None
-                                    SELECTED_PIECE = None
+                                        
 
-
+                                    if len(move) == 2:
+                                        if move[0] != move[1] and tuple(move) in gameEngine.get_all_legal_moves(gameEngine.current_player):
+                                            gameEngine.make_move(player= gameEngine.current_player, move= tuple(move))                               
+                                        move = []
+                                        SELECTED_POS = None
+                                        SELECTED_PIECE = None
+        if gameEngine.current_player == "black":
+            ai_move = ai.minimax(gameEngine= gameEngine, depth= 2, alpha= -math.inf, beta= math.inf, maximizing= False)
+            gameEngine.make_move(player= "black", move= ai_move.move)
+            
+        if gameEngine.made_move:
+            print("CHANGE PLAYER....................")
+            gameEngine.change_player()    
+                        
         draw_board()
         draw_pieces()
         pygame.display.flip()
