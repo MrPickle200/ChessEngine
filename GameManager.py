@@ -97,22 +97,21 @@ class GameManager:
             print("DRAW.")
             self.game_is_over = True
 
-    def make_move(self, player : str, move : tuple[str]) -> Move | None:
+    def make_move(self, player : str, move : Move) -> Move | None:
             self.made_move = False
-            legal_moves : list[tuple[str]] = self.__get_all_legal_moves(player= player)
+            legal_moves : list[Move] = self.__get_all_legal_moves(player= player)
 
             if move not in legal_moves:
-                    print(f"{player.upper()}'S TUNR: {move} IS A ILLEGAL MOVE. PLEASE TRY AGAIN !!!")
+                    print(f"{player.upper()}'S TUNR: {move.move} IS A ILLEGAL MOVE. PLEASE TRY AGAIN !!!")
             else :
-                #print(f"{player.upper()}'S TUNR: {move} IS A LEGAL MOVE.")
-                movement = Move(self.materials, move)
-                movement.make_move()
-                self.materials = movement.update_materials()
+                #print(f"{player.upper()}'S TUNR: {move} IS A LEGAL MOVE.")      
+                move.make_move()
+                self.materials = move.update_materials()
                 self.__update_occupancy()
                 self.made_move = True
 
                 # Return undo information
-                return movement
+                return move
             
                 # 50 moves rule
                 # if not self.is_any_piece_captured:
@@ -183,38 +182,36 @@ class GameManager:
             self.__update_occupancy()
             self.made_move = False
                
-    def __get_all_legal_moves(self, player : str) -> list[tuple[str]]:
-        all_moves : list[tuple[str]] = self.__get_all_moves(player)
-        legal_moves : list[tuple[str]] = []
+    def __get_all_legal_moves(self, player : str) -> list[Move]:
+        all_moves : list[Move] = self.__get_all_moves(player)
+        legal_moves : list[Move] = []
         root_materials = self.materials
 
         for move in all_moves:
-            movement = Move(self.materials, move)
-            movement.make_move()
-            self.materials = movement.update_materials()
+            self.materials = move.update_materials()
             self.__update_occupancy()
 
             # Create pseudo moves
             if self.__is_king_in_check(self.current_player):
-                movement.undo_move()
+                move.undo_move()
                 self.materials = root_materials
                 self.__update_occupancy()
                 continue
             
-            movement.undo_move()
+            move.undo_move()
             self.materials = root_materials
             self.__update_occupancy()
             legal_moves.append(move)
 
-        if self.last_move and self.last_moved_piece:
-            legal_moves.extend(self.__en_passant())
+        # if self.last_move and self.last_moved_piece:
+        #     legal_moves.extend(self.__en_passant())
 
-        #legal_moves.extend(self.__castling())
+        # #legal_moves.extend(self.__castling())
 
         return legal_moves
 
-    def __get_all_moves(self, player : str) -> list[str]:
-        all_moves = []
+    def __get_all_moves(self, player : str) -> list[Move]:
+        all_moves: list[Move] = []
         white_materials : list[Piece] = [piece for piece in self.materials.values() if piece.color == "white"]
         black_materials : list[Piece] = [piece for piece in self.materials.values() if piece.color == "black"]
         move_generator = Move_Generator()
@@ -252,13 +249,13 @@ class GameManager:
 
     def __is_king_in_check(self , player : str) -> bool:
         opponent : str = "white" if player == "black" else "black"
-        opponent_moves : list[tuple[str]] = self.__get_all_moves(opponent)
+        opponent_moves : list[Move] = self.__get_all_moves(opponent)
         king_pos : str = self.materials["white_king"].get_pos()[0] if player == "white" else self.materials["black_king"].get_pos()[0]
 
 
         # Check if king's position is in opponent attack
         for move in opponent_moves:
-            if move[1] == king_pos:
+            if move.move[1] == king_pos:
                 return True
         return False
 
@@ -478,34 +475,36 @@ class GameManager:
                 table[char + str(i)] = table[char + str(i - 1)] + 8
         return table[pos]
 
-    def get_all_legal_moves(self, player : str) -> list[tuple[str]]:
-        all_moves : list[tuple[str]] = self.__get_all_moves(player)
-        legal_moves : list[tuple[str]] = []
+    def get_all_legal_moves(self, player : str) -> list[Move]:
+        all_moves : list[Move] = self.__get_all_moves(player)
+        ordered_moves = []
+        legal_moves : list[Move] = []
         root_materials = self.materials
 
         for move in all_moves:
-            movement = Move(self.materials, move)
-            movement.make_move()
-            self.materials = movement.update_materials()
+            self.materials = move.update_materials()
             self.__update_occupancy()
 
             # Create pseudo moves
             if self.__is_king_in_check(self.current_player):
-                movement.undo_move()
+                move.undo_move()
                 self.materials = root_materials
                 self.__update_occupancy()
                 continue
             
-            movement.undo_move()
+            move.undo_move()
+            score = self.score_move(move= move)
             self.materials = root_materials
             self.__update_occupancy()
-            legal_moves.append(move)
+            ordered_moves.append((move, score))
 
-        if self.last_move and self.last_moved_piece:
-            legal_moves.extend(self.__en_passant())
+        # if self.last_move and self.last_moved_piece:
+        #     legal_moves.extend(self.__en_passant())
 
         #legal_moves.extend(self.__castling())
 
+        ordered_moves.sort(key= lambda x : -x[1])
+        legal_moves = [m[0] for m in ordered_moves]
         return legal_moves
     
     def get_piece_at(self, square : int) -> Piece:
@@ -513,7 +512,7 @@ class GameManager:
             if ((piece.bitboard >> square) & 1) == 1:
                 return piece
     
-    def generate_move_for_single_piece(self, piece : Piece) -> list[tuple[str]]:
+    def generate_move_for_single_piece(self, piece : Piece) -> list[Move]:
         move_generator = Move_Generator()
 
         if piece.symbol == 'P': 
@@ -554,3 +553,17 @@ class GameManager:
        
         for piece in materials.values():
                 self.bitboards[piece.symbol] = piece 
+
+    def score_move(self, move: Move) -> int:
+        # Assign values to piece types
+        PIECE_VALUES = {"P": 100, "N": 320, "B": 330, "R": 500, "Q": 900, "K": 10000}
+
+        score = 0
+
+        if move.is_capture():
+            victim_val = PIECE_VALUES[move.target.symbol.upper()]
+            attacker_val = PIECE_VALUES[move.piece.symbol.upper()]
+            # MVV-LVA ordering
+            score += (victim_val * 10 - attacker_val)
+        
+        return score

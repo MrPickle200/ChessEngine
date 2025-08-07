@@ -1,10 +1,11 @@
 from Piece import Piece
+from Move import Move
 from Materials import *
 
 class Move_Generator:
     def __init__(self):
         pass
-    def generate_white_pawns_move(self, white_pawns:Piece, white_occupancy:int, black_occupancy:int) -> list:
+    def generate_white_pawns_move(self, white_pawns:Piece, white_occupancy:int, black_occupancy:int) -> list[Move]:
         all_moves = []
         all_occupancy = white_occupancy | black_occupancy
         for i in range(64):
@@ -13,23 +14,26 @@ class Move_Generator:
                 from_sq = i
                 one_step = i + 8
                 if one_step < 64 and self.__is_square_empty(all_occupancy, one_step): # (all_occupancy >> one_step) & 1 == 0 use to check if the targeted square is empty
-                    all_moves.append((self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(one_step)))
+                    move = (self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(one_step))
+                    all_moves.append(Move(materials= materials, move= move))
                     #Double push if the pawn is in rank 2
                     if 8 <= i <= 15:
                         two_step = i + 16
                         if self.__is_square_empty(all_occupancy, two_step):
-                            all_moves.append((self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(two_step)))
+                            move = (self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(two_step))
+                            all_moves.append(Move(materials= materials, move= move))
                 # Capture left (<< 7)
                 if from_sq % 8 != 0: # Not in rank A
                     left_capture = i + 7
                     if left_capture < 64 and self.__is_square_occupied_by_black(black_occupancy, left_capture):
-                        all_moves.append((self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(left_capture)))
+                        move = (self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(left_capture))
+                        all_moves.append(Move(materials= materials, move= move))
                 # Capture right (<< 9)
                 if from_sq % 8 != 7: # Not in rank H
                     right_capture = i + 9
                     if right_capture < 64 and self.__is_square_occupied_by_black(black_occupancy, right_capture):
-                        all_moves.append((self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(right_capture)))
-
+                        move = (self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(right_capture))
+                        all_moves.append(Move(materials= materials, move= move))
         return all_moves
 
     def generate_black_pawns_move(self, black_pawns:Piece, white_occupancy:int, black_occupancy:int) -> list:
@@ -41,23 +45,27 @@ class Move_Generator:
                 from_sq = i
                 one_step = i - 8
                 if one_step >= 0 and self.__is_square_empty(all_occupancy, one_step): # (all_occupancy << one_step) & 1 == 0 use to check if the targeted square is empty
-                    all_moves.append((self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(one_step)))
+                    move = (self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(one_step))
+                    all_moves.append(Move(materials= materials, move= move))
                     
                     #Double push if the pawn is in rank 2
                     if 48 <= i <= 55:
                         two_step = i - 16
                         if self.__is_square_empty(all_occupancy, two_step):
-                            all_moves.append((self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(two_step)))
+                            move = (self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(two_step))
+                            all_moves.append(Move(materials= materials, move= move))
                 # Capture left 
                 if from_sq % 8 != 0: # Not in rank A
                     left_capture = i - 9
                     if left_capture >= 0 and self.__is_square_occupied_by_white(white_occupancy, left_capture):
-                        all_moves.append((self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(left_capture)))
+                        move = (self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(left_capture))
+                        all_moves.append(Move(materials= materials, move= move))
                 # Capture right 
                 if from_sq % 8 != 7: # Not in rank H
                     right_capture = i - 7
                     if right_capture >= 0 and self.__is_square_occupied_by_white(white_occupancy, right_capture):
-                        all_moves.append((self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(right_capture)))
+                        move = (self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(right_capture))
+                        all_moves.append(Move(materials= materials, move= move))
 
         return all_moves
 
@@ -79,7 +87,8 @@ class Move_Generator:
                 if file_diff > 2: # Knight's move never change file over 2
                     continue
                 if self.__is_square_empty(all_occupancy, to_sq) or self.__is_square_occupied_by_black(black_occupancy, to_sq):
-                    all_moves.append((self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(to_sq)))
+                    move = (self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(to_sq))
+                    all_moves.append(Move(materials= materials, move= move))
 
         return all_moves
 
@@ -101,7 +110,9 @@ class Move_Generator:
                 if file_diff > 2: # Knight's move never change file over 2
                     continue
                 if self.__is_square_empty(all_occupancy, to_sq) or self.__is_square_occupied_by_white(white_occupancy, to_sq):
-                    all_moves.append((self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(to_sq)))
+                    move = (self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(to_sq))
+                    all_moves.append(Move(materials= materials, move= move))
+
 
         return all_moves
 
@@ -119,7 +130,9 @@ class Move_Generator:
             while to_sq >= 0 and to_sq % 8 < from_file:  # prevent wrapping
                 if self.__is_square_occupied_by_white(white_occupancy, to_sq):
                     break
-                all_moves.append((self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(to_sq)))
+                move = (self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(to_sq))
+                all_moves.append(Move(materials= materials, move= move))
+
                 if self.__is_square_occupied_by_black(black_occupancy, to_sq):
                     break
                 to_sq -= 1
@@ -129,7 +142,9 @@ class Move_Generator:
             while to_sq < 64 and to_sq % 8 > from_file:  # prevent wrapping
                 if self.__is_square_occupied_by_white(white_occupancy, to_sq):
                     break
-                all_moves.append((self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(to_sq)))
+                move = (self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(to_sq))
+                all_moves.append(Move(materials= materials, move= move))
+
                 if self.__is_square_occupied_by_black(black_occupancy, to_sq):
                     break
                 to_sq += 1
@@ -139,7 +154,9 @@ class Move_Generator:
             while to_sq < 64:
                 if self.__is_square_occupied_by_white(white_occupancy, to_sq):
                     break
-                all_moves.append((self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(to_sq)))
+                move = (self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(to_sq))
+                all_moves.append(Move(materials= materials, move= move))
+
                 if self.__is_square_occupied_by_black(black_occupancy, to_sq):
                     break
                 to_sq += 8
@@ -149,7 +166,9 @@ class Move_Generator:
             while to_sq >= 0:
                 if self.__is_square_occupied_by_white(white_occupancy, to_sq):
                     break
-                all_moves.append((self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(to_sq)))
+                move = (self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(to_sq))
+                all_moves.append(Move(materials= materials, move= move))
+
                 if self.__is_square_occupied_by_black(black_occupancy, to_sq):
                     break
                 to_sq -= 8
@@ -170,7 +189,9 @@ class Move_Generator:
             while to_sq >= 0 and to_sq % 8 < from_file:  # prevents wrap from file A to H
                 if self.__is_square_occupied_by_black(black_occupancy, to_sq):
                     break
-                all_moves.append((self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(to_sq)))
+                move = (self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(to_sq))
+                all_moves.append(Move(materials= materials, move= move))
+
                 if self.__is_square_occupied_by_white(white_occupancy, to_sq):
                     break
                 to_sq -= 1
@@ -180,7 +201,9 @@ class Move_Generator:
             while to_sq < 64 and to_sq % 8 > from_file:  # prevents wrap from file H to A
                 if self.__is_square_occupied_by_black(black_occupancy, to_sq):
                     break
-                all_moves.append((self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(to_sq)))
+                move = (self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(to_sq))
+                all_moves.append(Move(materials= materials, move= move))
+
                 if self.__is_square_occupied_by_white(white_occupancy, to_sq):
                     break
                 to_sq += 1
@@ -190,7 +213,9 @@ class Move_Generator:
             while to_sq < 64:
                 if self.__is_square_occupied_by_black(black_occupancy, to_sq):
                     break
-                all_moves.append((self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(to_sq)))
+                move = (self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(to_sq))
+                all_moves.append(Move(materials= materials, move= move))
+
                 if self.__is_square_occupied_by_white(white_occupancy, to_sq):
                     break
                 to_sq += 8
@@ -200,7 +225,9 @@ class Move_Generator:
             while to_sq >= 0:
                 if self.__is_square_occupied_by_black(black_occupancy, to_sq):
                     break
-                all_moves.append((self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(to_sq)))
+                move = (self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(to_sq))
+                all_moves.append(Move(materials= materials, move= move))
+
                 if self.__is_square_occupied_by_white(white_occupancy, to_sq):
                     break
                 to_sq -= 8
@@ -221,7 +248,9 @@ class Move_Generator:
             while to_sq < 64 and to_sq % 8 > from_file:
                 if self.__is_square_occupied_by_white(white_occupancy, to_sq):
                     break
-                all_moves.append((self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(to_sq)))
+                move = (self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(to_sq))
+                all_moves.append(Move(materials= materials, move= move))
+
                 if self.__is_square_occupied_by_black(black_occupancy, to_sq):
                     break
                 to_sq += 9
@@ -233,7 +262,9 @@ class Move_Generator:
             while to_sq < 64 and to_sq % 8 < temp_file:
                 if self.__is_square_occupied_by_white(white_occupancy, to_sq):
                     break
-                all_moves.append((self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(to_sq)))
+                move = (self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(to_sq))
+                all_moves.append(Move(materials= materials, move= move))
+
                 if self.__is_square_occupied_by_black(black_occupancy, to_sq):
                     break
                 to_sq += 7
@@ -245,7 +276,9 @@ class Move_Generator:
             while to_sq >= 0 and to_sq % 8 > temp_file:
                 if self.__is_square_occupied_by_white(white_occupancy, to_sq):
                     break
-                all_moves.append((self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(to_sq)))
+                move = (self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(to_sq))
+                all_moves.append(Move(materials= materials, move= move))
+
                 if self.__is_square_occupied_by_black(black_occupancy, to_sq):
                     break
                 to_sq -= 7
@@ -257,7 +290,9 @@ class Move_Generator:
             while to_sq >= 0 and to_sq % 8 < temp_file:
                 if self.__is_square_occupied_by_white(white_occupancy, to_sq):
                     break
-                all_moves.append((self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(to_sq)))
+                move = (self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(to_sq))
+                all_moves.append(Move(materials= materials, move= move))
+
                 if self.__is_square_occupied_by_black(black_occupancy, to_sq):
                     break
                 to_sq -= 9
@@ -280,7 +315,9 @@ class Move_Generator:
             while to_sq < 64 and to_sq % 8 > temp_file:
                 if self.__is_square_occupied_by_black(black_occupancy, to_sq):
                     break
-                all_moves.append((self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(to_sq)))
+                move = (self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(to_sq))
+                all_moves.append(Move(materials= materials, move= move))
+
                 if self.__is_square_occupied_by_white(white_occupancy, to_sq):
                     break
                 to_sq += 9
@@ -292,7 +329,9 @@ class Move_Generator:
             while to_sq < 64 and to_sq % 8 < temp_file:
                 if self.__is_square_occupied_by_black(black_occupancy, to_sq):
                     break
-                all_moves.append((self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(to_sq)))
+                move = (self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(to_sq))
+                all_moves.append(Move(materials= materials, move= move))
+
                 if self.__is_square_occupied_by_white(white_occupancy, to_sq):
                     break
                 to_sq += 7
@@ -304,7 +343,9 @@ class Move_Generator:
             while to_sq >= 0 and to_sq % 8 > temp_file:
                 if self.__is_square_occupied_by_black(black_occupancy, to_sq):
                     break
-                all_moves.append((self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(to_sq)))
+                move = (self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(to_sq))
+                all_moves.append(Move(materials= materials, move= move))
+
                 if self.__is_square_occupied_by_white(white_occupancy, to_sq):
                     break
                 to_sq -= 7
@@ -316,7 +357,9 @@ class Move_Generator:
             while to_sq >= 0 and to_sq % 8 < temp_file:
                 if self.__is_square_occupied_by_black(black_occupancy, to_sq):
                     break
-                all_moves.append((self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(to_sq)))
+                move = (self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(to_sq))
+                all_moves.append(Move(materials= materials, move= move))
+
                 if self.__is_square_occupied_by_white(white_occupancy, to_sq):
                     break
                 to_sq -= 9
@@ -348,7 +391,9 @@ class Move_Generator:
                     to_sq = from_sq + i
                     if 0 <= to_sq <= 63:
                         if abs(to_sq % 8 - from_file) <= 1 and not self.__is_square_occupied_by_white(white_occupancy, to_sq):
-                            all_moves.append((self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(to_sq)))
+                            move = (self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(to_sq))
+                            all_moves.append(Move(materials= materials, move= move))
+
             break
         return all_moves      
 
@@ -364,7 +409,8 @@ class Move_Generator:
                     to_sq = from_sq + i
                     if 0 <= to_sq <= 63:
                         if abs(to_sq % 8 - from_file) <= 1 and not self.__is_square_occupied_by_black(black_occupancy, to_sq):
-                            all_moves.append((self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(to_sq)))
+                            move = (self.__convert_idx_to_pos(from_sq), self.__convert_idx_to_pos(to_sq))
+                            all_moves.append(Move(materials= materials, move= move))
             break
         
         return all_moves        

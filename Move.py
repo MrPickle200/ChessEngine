@@ -12,10 +12,13 @@ class Move:
         self.castling : bool = False
 
         for piece in materials.values():
-            if ((piece.bitboard >> self.__convert_pos_to_idx(move[0])) & 1) == 1:
+            if ((piece.bitboard >> self.__convert_pos_to_idx(self.move[0])) & 1) == 1:
                 self.piece = piece
-            if ((piece.bitboard >> self.__convert_pos_to_idx(move[1])) & 1) == 1:
+            if ((piece.bitboard >> self.__convert_pos_to_idx(self.move[1])) & 1) == 1:
                 self.target = piece        
+
+    def __eq__(self, other):
+        return isinstance(other, Move) and self.move == other.move
 
     def __convert_pos_to_idx(self,pos:str) -> int:
         table = {
@@ -49,6 +52,7 @@ class Move:
             self.target.set_square(current_pos)
         elif self.castling_dir == "left":
             self.target.set_square(current_pos - 1)
+
     def undo_move(self) -> None:
         target: int = self.__convert_pos_to_idx(self.move[1])
         current_pos: int = self.__convert_pos_to_idx(self.move[0])

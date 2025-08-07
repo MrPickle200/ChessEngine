@@ -1,10 +1,12 @@
 from Piece import Piece
 from GameManager import GameManager
 from Materials import materials
+from Move import Move
 import math
 
+
 class State:
-    def __init__(self, score : int, materials : dict, move : tuple[str] = None):
+    def __init__(self, score : int, materials : dict, move : Move = None):
         self.score = score
         self.materials = materials
         self.move = move

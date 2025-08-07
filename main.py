@@ -2,6 +2,7 @@ from GameManager import GameManager
 from Materials import materials
 from Piece import Piece
 from AI import AI
+from Move import Move
 
 import math
 import pygame
@@ -52,12 +53,12 @@ def draw_board(screen=screen, width: int=WIDTH, height: int=HEIGHT, square_size:
                 pygame.draw.rect(screen, WHITE, rect)
 
             # Highlight valid moves for selected piece
-            if SELECTED_PIECE:
-                valid_moves: list[tuple[str]] = gameEngine.generate_move_for_single_piece(SELECTED_PIECE)
+            if SELECTED_PIECE and SELECTED_POS:
+                valid_moves = gameEngine.generate_move_for_single_piece(SELECTED_PIECE)
                 for move in valid_moves:
                     from_pos = gameEngine.convert_idx_to_pos_for_UI(SELECTED_POS)
-                    if move[0] == from_pos:
-                        to_sq = gameEngine.convert_pos_to_idx_for_UI(move[1])
+                    if move.move[0] == from_pos:
+                        to_sq = gameEngine.convert_pos_to_idx_for_UI(move.move[1])
                         to_x = to_sq % 8
                         to_y = 7 - (to_sq // 8)
                         pygame.draw.rect(screen, WHITE, pygame.Rect(to_x * square_size, to_y * square_size, square_size, square_size))
@@ -113,7 +114,7 @@ def main() -> None:
             if gameEngine.current_player == "white":
                 if len(move) == 2:
                     if move[0] != move[1]:
-                        white_move = gameEngine.make_move(player= gameEngine.current_player, move= tuple(move))                               
+                        white_move = gameEngine.make_move(player= gameEngine.current_player, move= Move(materials= gameEngine.materials, move= tuple(move)))                               
                     move = []
                     SELECTED_POS = None
                     SELECTED_PIECE = None
