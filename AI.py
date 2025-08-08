@@ -137,7 +137,8 @@ class AI:
 
         if maximizing:
             best_score = -math.inf
-            for move in all_moves:
+            for m in all_moves:
+                move = Move(materials= gameEngine.materials, move= m)
                 undo_info = gameEngine.make_move("white", move)
                 state = self.minimax(gameEngine, depth - 1, alpha = alpha, beta= beta, maximizing=False)
                 gameEngine.undo_move(undo_info= undo_info)
@@ -150,7 +151,8 @@ class AI:
                     break
         else:
             best_score = math.inf
-            for move in all_moves:
+            for m in all_moves:
+                move = Move(materials= gameEngine.materials, move= m)
                 undo_info = gameEngine.make_move("black", move)
                 state = self.minimax(gameEngine, depth - 1, alpha = alpha, beta= beta, maximizing=True)
                 gameEngine.undo_move(undo_info= undo_info)
@@ -164,7 +166,3 @@ class AI:
         return best_state
 
         
-# gameEngine = GameManager(materials= materials)        
-# ai = AI()
-# move = ai.minimax(gameEngine= gameEngine, depth= 2, alpha= -math.inf, beta= math.inf, maximizing= False)
-# print(move.move)
